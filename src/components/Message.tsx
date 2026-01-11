@@ -9,16 +9,19 @@ type Props = {
 export function Message({ role, content }: Props) {
   const isUser = role === 'user';
   const label = isUser ? 'You' : 'Claude';
-  const labelColor = isUser ? 'blue' : 'white';
+  const labelColor = isUser ? 'cyan' : 'magenta';
+  const icon = isUser ? '👤' : '🤖';
   
   return (
     <Box flexDirection="column" paddingX={1} marginBottom={1}>
       <Box marginBottom={0}>
-        <Text color={labelColor} bold wrap="wrap">
-          {isUser ? 'You' : 'Claude'}
+        <Text>
+          <Text color={labelColor} bold>
+            {icon} {label}
+          </Text>
         </Text>
       </Box>
-      <Box paddingLeft={2} marginTop={0} flexDirection="column">
+      <Box paddingLeft={3} marginTop={0} flexDirection="column">
         <FormattedText content={content} />
       </Box>
     </Box>

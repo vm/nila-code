@@ -1,222 +1,197 @@
-# Nila Code
+<div align="center">
 
-A powerful CLI-based coding assistant powered by Claude (Anthropic) that can read, edit, and create files, list directories, and run shell commands. Built with TypeScript, React (Ink), and Bun for a blazingly fast development experience.
+# 🤖 Coding Agent
 
-## Features
+**A smart AI assistant that can read, write, and execute code in your terminal**
 
-- **File Operations** - Read, edit, create, and manage files with natural language
-- **Directory Navigation** - List and browse directory contents
-- **Command Execution** - Run shell commands and scripts
-- **Conversational Interface** - Maintains context across multiple interactions
-- **Tool Visibility** - Real-time feedback on executed operations
-- **Token Usage Tracking** - Monitor API usage with detailed statistics
-- **Beautiful Terminal UI** - Clean, responsive interface built with React Ink
-- **Test-Driven Development** - Comprehensive test coverage for reliability
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Bun](https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white)](https://bun.sh)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Quick Start
+*Talk to your codebase in plain English. Build, debug, and manage projects through natural conversation.*
+
+[Quick Start](#-quick-start) • [Features](#-what-can-it-do) • [Examples](#-example-session) • [Development](#-development)
+
+---
+
+</div>
+
+## ✨ What can it do?
+
+| Feature | Description |
+|---------|-------------|
+| 📁 **File Operations** | Read, edit, and create files with natural language commands |
+| 🔧 **Command Execution** | Run shell commands and scripts safely |
+| 📂 **Directory Navigation** | Explore and understand your project structure |
+| 🎯 **Complex Tasks** | Handle multi-step workflows automatically |
+
+**Just ask naturally:**
+- *"Show me the package.json"*
+- *"Add TypeScript to this project"*
+- *"Install dependencies and start the dev server"*
+- *"Create a login form with validation and tests"*
+
+---
+
+## ⚡ Quick Start
 
 ### Prerequisites
-- [Bun](https://bun.sh) installed on your system
-- Anthropic API key ([Get one here](https://console.anthropic.com/))
+
+- **[Bun](https://bun.sh)** installed on your system
+- **Anthropic API key** from [console.anthropic.com](https://console.anthropic.com/)
 
 ### Installation
 
-1. **Clone and install:**
-   ```bash
-   git clone <repository-url>
-   cd nila-code
-   bun install
-   ```
+```bash
+# Clone the repository
+git clone <this-repo>
+cd coding-agent
 
-2. **Set up your API key:**
-   ```bash
-   # Create .env file
-   echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
-   ```
+# Install dependencies
+bun install
 
-3. **Start coding:**
-   ```bash
-   # Navigate to your project
-   cd /path/to/your/project
-   
-   # Start Nila Code
-   bun start
-   ```
+# Set up your API key
+echo "ANTHROPIC_API_KEY=your-key-here" > .env
 
-## Usage Examples
-
-### File Operations
-```
-"Create a React component called Button in src/components/"
-"Read the tsconfig.json file and show me the compiler options"
-"Update package.json to add lodash as a dependency"
-"Delete all .log files in the current directory"
+# Start the agent
+bun start
 ```
 
-### Development Tasks
+**That's it!** Navigate to any project folder and run `bun start` to begin.
+
+---
+
+## 💬 How It Works
+
+The assistant follows a simple workflow:
+
 ```
-"Set up a new Express.js project with TypeScript"
-"Run the tests and show me the results"
-"Build the project and check for any errors"
-"Create a Dockerfile for this Node.js app"
+┌─────────────────┐
+│  You: Request   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Understand     │
+│  Your Intent    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Read Relevant  │
+│  Files          │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Execute Actions│
+│  (Edit/Run/etc) │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Show Results   │
+└─────────────────┘
 ```
 
-### System Operations
-```
-"Show me the git status and recent commits"
-"Install dependencies and start the development server"
-"Find all TODO comments in TypeScript files"
-"Check the disk usage of this directory"
-```
+### Example Requests
 
-### Multi-step Workflows
 ```
-"Create a new feature branch, add a login component, and run tests"
-"Refactor the user service to use async/await, then update the tests"
-"Generate API documentation and deploy to GitHub Pages"
+💭 "Create a React component for a todo list"
+💭 "Fix the TypeScript errors in src/utils"  
+💭 "Run the tests and show me what failed"
+💭 "Add a new API endpoint for user registration"
 ```
 
-## User Interface
+---
 
-When you start Nila Code, you'll see:
+## 🎮 Example Session
 
-- **Header**: Shows current working directory and quick examples
-- **Messages**: Your conversation with the assistant
-- **Tool Calls**: Real-time display of operations being performed
-- **Token Usage**: API usage statistics (input/output tokens)
-- **Input**: Type your requests in natural language
+```
+You: Create a simple Express server with a health check endpoint
 
-### Controls
-- **Enter**: Send message
-- **Ctrl+C**: Exit application
-- **↑/↓**: Navigate command history (if implemented)
+🤖 I'll create an Express server for you...
 
-## Development
+📝 Created: server.js
+🏃 Running: npm init -y
+🏃 Running: npm install express
+📝 Created: package.json scripts
+
+✅ Done! Your server is ready. Run 'npm start' to launch it.
+```
+
+---
+
+## 🛠 Development
 
 ### Running Tests
+
 ```bash
 # Run all tests
 bun test
 
-# Run tests in watch mode
+# Watch mode for development
 bun test --watch
 
-# Run tests with coverage
+# Generate coverage report
 bun test --coverage
-
-
-# Run specific test file
-bun test src/tools/read-file.test.ts
 ```
-
-### Test Coverage
-
-The project maintains high test coverage:
-- **Functions**: 98.33% (threshold: 80%)
-- **Lines**: 94.31% (threshold: 80%)
-
-Coverage reports are generated automatically when running `bun test --coverage`. Coverage thresholds (80% for functions and lines) are enforced via `bunfig.toml` - tests will fail if coverage drops below the threshold.
-
-**Coverage by file:**
-- `src/agent/agent.ts` - 90% functions, 100% lines
-- `src/tools/edit-file.ts` - 100% functions, 87.88% lines
-- `src/tools/index.ts` - 100% functions, 100% lines
-- `src/tools/list-files.ts` - 100% functions, 95.45% lines
-- `src/tools/read-file.ts` - 100% functions, 90% lines
-- `src/tools/run-command.ts` - 100% functions, 92.54% lines
 
 ### Project Structure
+
 ```
-src/
-├── agent/          # Core agent logic and types
-├── components/     # React Ink UI components
-├── tools/          # File system and command tools
-└── index.tsx       # Application entry point
+coding-agent/
+├── src/
+│   ├── agent/          # Core agent logic
+│   ├── components/     # React/Ink UI components
+│   └── tools/          # Available tools/commands
+├── tests/              # Test suite
+└── package.json
 ```
-
-### Available Scripts
-- `bun start` - Start the application
-- `bun test` - Run test suite
-- `bun test --watch` - Run tests in watch mode
-- `bun test --coverage` - Run tests with coverage report
-
-## Architecture
-
-### Tech Stack
-- **TypeScript** - Type safety and developer experience
-- **React + Ink** - Component-based terminal UI
-- **Bun** - Fast runtime, bundler, and test runner
-- **Claude (Anthropic)** - Advanced AI reasoning capabilities
-
-### Core Components
-
-#### Agent (`src/agent/`)
-- Manages conversation flow and tool orchestration
-- Handles Claude API communication
-- Maintains conversation context and history
-
-#### Tools (`src/tools/`)
-- **read_file** - Read file contents
-- **edit_file** - Edit files or create new ones
-- **list_files** - Browse directories
-- **run_command** - Execute shell commands
-
-#### UI Components (`src/components/`)
-- **App** - Main application container
-- **Message** - Chat message display
-- **ToolCall** - Tool execution visualization
-- **Input** - Command input interface
-
-## Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-# Required: Your Anthropic API key
-ANTHROPIC_API_KEY=your-api-key-here
-
-# Optional: Override default model
-ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
-```
-
-## Contributing
-
-We welcome contributions! Here's how to get started:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run the test suite: `bun test`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
-
-### Development Guidelines
-- Write tests for new features
-- Follow TypeScript best practices
-- Use descriptive commit messages
-- Update documentation for API changes
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- **Issues**: Report bugs or request features
-- **Discussions**: Ask questions or share ideas
-- **Contact**: [your-email@example.com]
-
-## Roadmap
-
-- [ ] Plugin system for custom tools
-- [ ] Multi-language support
-- [ ] Integration with popular IDEs
-- [ ] Cloud sync for conversation history
-- [ ] Advanced file search and filtering
-- [ ] Git integration improvements
-- [ ] Performance optimizations
 
 ---
 
-**Made with love using Claude, TypeScript, and Bun**
+## 🔧 Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| **TypeScript** | Type-safe development |
+| **Bun** | Fast runtime & package manager |
+| **Claude AI** | Intelligent code understanding |
+| **React + Ink** | Beautiful terminal UI |
+
+---
+
+## 📋 Requirements
+
+- ✅ Bun installed
+- ✅ Anthropic API key
+- ✅ That's it!
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Found a bug or have an idea?
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**Made with ❤️ using TypeScript, Bun, and Claude AI**
+
+[⬆ Back to Top](#-coding-agent)
+
+</div>

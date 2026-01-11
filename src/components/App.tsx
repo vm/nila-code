@@ -145,28 +145,51 @@ export function App() {
     <Box flexDirection="column" padding={0}>
       {/* Header Section */}
       {messages.length === 0 && (
-        <Box flexDirection="column" paddingX={2} paddingY={1} borderBottom borderStyle="single" borderColor="gray">
+        <Box 
+          flexDirection="column" 
+          paddingX={2} 
+          paddingY={1} 
+          borderBottom 
+          borderStyle="single" 
+          borderColor="cyan"
+        >
           <Box marginBottom={1}>
-            <Text color="white" bold>Nila Code</Text>
+            <Text>
+              <Text color="cyan" bold>🤖 </Text>
+              <Text color="cyan" bold>Coding Agent</Text>
+            </Text>
           </Box>
           <Box marginBottom={1}>
-            <Text color="gray" dimColor wrap="wrap">{workingDir}</Text>
+            <Text>
+              <Text color="blue" dimColor>📁 </Text>
+              <Text color="blue" dimColor wrap="wrap">{workingDir}</Text>
+            </Text>
           </Box>
           <Box flexDirection="column" marginTop={1}>
-            <Text color="gray" dimColor>Examples:</Text>
-            <Text color="gray" dimColor wrap="wrap">  • Create a file called hello.txt with 'Hello World'</Text>
-            <Text color="gray" dimColor wrap="wrap">  • List all files in the current directory</Text>
-            <Text color="gray" dimColor wrap="wrap">  • Read the package.json file</Text>
-            <Text color="gray" dimColor wrap="wrap">  • Run the command: ls -la</Text>
+            <Text color="yellow" bold>💡 Examples:</Text>
+            <Text color="green" dimColor wrap="wrap">  • Create a file called hello.txt with 'Hello World'</Text>
+            <Text color="green" dimColor wrap="wrap">  • List all files in the current directory</Text>
+            <Text color="green" dimColor wrap="wrap">  • Read the package.json file</Text>
+            <Text color="green" dimColor wrap="wrap">  • Run the command: ls -la</Text>
           </Box>
         </Box>
       )}
 
       {/* Token Usage Display */}
       {totalTokens.input > 0 && (
-        <Box paddingX={2} paddingY={0} borderBottom borderStyle="single" borderColor="gray">
-          <Text color="gray" dimColor wrap="wrap">
-            Tokens: {totalTokens.input.toLocaleString()} in / {totalTokens.output.toLocaleString()} out
+        <Box 
+          paddingX={2} 
+          paddingY={1} 
+          borderBottom 
+          borderStyle="single" 
+          borderColor="magenta"
+          backgroundColor="black"
+        >
+          <Text>
+            <Text color="magenta" bold>📊 </Text>
+            <Text color="magenta" dimColor wrap="wrap">
+              Tokens: <Text color="cyan" bold>{totalTokens.input.toLocaleString()}</Text> in / <Text color="yellow" bold>{totalTokens.output.toLocaleString()}</Text> out
+            </Text>
           </Text>
         </Box>
       )}
@@ -263,8 +286,12 @@ export function App() {
                 <Message role={msg.role} content={msg.content} />
                 {msg.tokenUsage && (
                   <Box marginTop={0} marginLeft={2}>
-                    <Text color="gray" dimColor wrap="wrap">
-                      ({msg.tokenUsage.input} in / {msg.tokenUsage.output} out tokens)
+                    <Text wrap="wrap">
+                      <Text color="magenta" dimColor>(</Text>
+                      <Text color="cyan" dimColor>{msg.tokenUsage.input}</Text>
+                      <Text color="magenta" dimColor> in / </Text>
+                      <Text color="yellow" dimColor>{msg.tokenUsage.output}</Text>
+                      <Text color="magenta" dimColor> out tokens)</Text>
                     </Text>
                   </Box>
                 )}
@@ -276,19 +303,34 @@ export function App() {
         
         {isLoading && activeToolCalls.length === 0 && (
           <Box marginTop={1}>
-            <Text color="gray" dimColor wrap="wrap">Thinking...</Text>
+            <Text>
+              <Text color="yellow">⚡ </Text>
+              <Text color="yellow" dimColor wrap="wrap">Thinking...</Text>
+            </Text>
           </Box>
         )}
         {error && (
-          <Box marginTop={1} flexDirection="column">
-            <Text color="red" bold wrap="wrap">Error: </Text>
-            <Text color="red" wrap="wrap">{error}</Text>
+          <Box marginTop={1} flexDirection="column" paddingX={1}>
+            <Text>
+              <Text color="red" bold>❌ </Text>
+              <Text color="red" bold wrap="wrap">Error: </Text>
+            </Text>
+            <Box paddingLeft={2} marginTop={0}>
+              <Text color="red" wrap="wrap">{error}</Text>
+            </Box>
           </Box>
         )}
       </Box>
 
       {/* Input Section */}
-      <Box borderTop borderStyle="single" borderColor="gray" paddingX={2} paddingY={1}>
+      <Box 
+        borderTop 
+        borderStyle="single" 
+        borderColor="cyan" 
+        paddingX={2} 
+        paddingY={1}
+        backgroundColor="black"
+      >
         <Input onSubmit={handleSubmit} disabled={isLoading} />
       </Box>
     </Box>

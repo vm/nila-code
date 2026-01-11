@@ -88,14 +88,18 @@ export function FormattedText({ content }: Props) {
             <Box key={idx} flexDirection="column" marginY={1}>
               {part.language && part.language !== 'text' && (
                 <Box paddingX={1} paddingY={0}>
-                  <Text color="gray" dimColor wrap="wrap">{part.language}</Text>
+                  <Text>
+                    <Text color="magenta" bold>💻 </Text>
+                    <Text color="magenta" dimColor wrap="wrap">{part.language}</Text>
+                  </Text>
                 </Box>
               )}
               <Box 
                 borderStyle="single" 
-                borderColor="gray" 
+                borderColor="blue" 
                 paddingX={1} 
                 paddingY={0}
+                backgroundColor="black"
               >
                 <Text color="white" wrap="wrap">
                   {lines.join('\n')}
@@ -113,13 +117,15 @@ export function FormattedText({ content }: Props) {
             {textParts.map((textPart, textIdx) => {
               if (textPart.type === 'inlineCode') {
                 return (
-                  <Text key={textIdx} color="cyan" dimColor wrap="wrap">
-                    {`\`${textPart.content}\``}
+                  <Text key={textIdx} wrap="wrap">
+                    <Text backgroundColor="black" color="yellow">
+                      {`\`${textPart.content}\``}
+                    </Text>
                   </Text>
                 );
               }
               return (
-                <Text key={textIdx} wrap="wrap">
+                <Text key={textIdx} color="white" wrap="wrap">
                   {textPart.content}
                 </Text>
               );
