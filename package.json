@@ -1,5 +1,5 @@
 {
-  "name": "coding-agent",
+  "name": "nila-code",
   "type": "module",
   "scripts": {
     "start": "bun run src/index.tsx",

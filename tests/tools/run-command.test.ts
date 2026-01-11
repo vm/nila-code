@@ -25,5 +25,33 @@ describe('runCommand', () => {
     expect(result).toContain('with');
     expect(result).toContain('args');
   });
+
+  it('handles git commit with message containing spaces', () => {
+    // Test that git commit messages with spaces are parsed correctly
+    // We'll use --dry-run to avoid actually committing
+    const result = runCommand('git commit --dry-run -m "UI improvements and tests"');
+    // Should not error with pathspec issues - if it does, the error will contain "pathspec"
+    expect(result).not.toContain('pathspec');
+  });
+
+  it('handles single quotes in commit messages', () => {
+    const result = runCommand("git commit --dry-run -m 'Add feature with spaces'");
+    expect(result).not.toContain('pathspec');
+  });
+
+  it('handles complex quoted strings', () => {
+    const result = runCommand('echo "This is a test with multiple words"');
+    expect(result).toBe('This is a test with multiple words');
+  });
+
+  it('handles escaped quotes', () => {
+    const result = runCommand('echo "He said \\"hello\\""');
+    expect(result).toContain('He said');
+  });
+
+  it('handles empty command', () => {
+    const result = runCommand('');
+    expect(result).toContain('Empty command');
+  });
 });
 

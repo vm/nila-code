@@ -19,7 +19,7 @@ Based on [How to Build an Agent](https://ampcode.com/how-to-build-an-agent) by T
 ## Final File Structure
 
 ```
-coding-agent/
+nila-code/
 ├── package.json
 ├── tsconfig.json
 ├── .gitignore
@@ -69,7 +69,7 @@ Each feature follows **Red → Green → Refactor**:
 - [ ] **1.1** Create `package.json`:
   ```json
   {
-    "name": "coding-agent",
+    "name": "nila-code",
     "type": "module",
     "scripts": {
       "start": "bun run src/index.tsx",

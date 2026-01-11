@@ -6,6 +6,10 @@ import type Anthropic from '@anthropic-ai/sdk';
 const mockCreate = mock(() => Promise.resolve({
   content: [{ type: 'text', text: 'Hello!' }],
   stop_reason: 'end_turn',
+  usage: {
+    input_tokens: 10,
+    output_tokens: 5,
+  },
 }));
 
 const mockClient = {
@@ -22,6 +26,10 @@ describe('Agent', () => {
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'Hello, how can I help you?' }],
         stop_reason: 'end_turn',
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+        },
       });
 
       const agent = new Agent(mockClient);
@@ -29,6 +37,7 @@ describe('Agent', () => {
 
       expect(response.text).toBe('Hello, how can I help you?');
       expect(response.toolCalls).toHaveLength(0);
+      expect(response.tokenUsage).toEqual({ input: 10, output: 5 });
       expect(mockCreate).toHaveBeenCalledTimes(1);
     });
   });
@@ -44,12 +53,20 @@ describe('Agent', () => {
           input: { path: 'test.txt' }
         }],
         stop_reason: 'tool_use',
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+        },
       });
 
       // Second call: returns text after tool result
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'File contents: Hello World' }],
         stop_reason: 'end_turn',
+        usage: {
+          input_tokens: 20,
+          output_tokens: 10,
+        },
       });
 
       const agent = new Agent(mockClient);
@@ -73,6 +90,10 @@ describe('Agent', () => {
           input: { path: 'test.txt' }
         }],
         stop_reason: 'tool_use',
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+        },
       });
 
       // Second call: returns edit_file tool_use
@@ -84,12 +105,20 @@ describe('Agent', () => {
           input: { path: 'test.txt', old_str: 'old', new_str: 'new' }
         }],
         stop_reason: 'tool_use',
+        usage: {
+          input_tokens: 20,
+          output_tokens: 5,
+        },
       });
 
       // Third call: returns final text
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'File updated successfully' }],
         stop_reason: 'end_turn',
+        usage: {
+          input_tokens: 30,
+          output_tokens: 10,
+        },
       });
 
       const agent = new Agent(mockClient);
@@ -114,12 +143,20 @@ describe('Agent', () => {
           input: { path: 'nonexistent.txt' }
         }],
         stop_reason: 'tool_use',
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+        },
       });
 
       // Second call: returns text after receiving error
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'I encountered an error reading that file' }],
         stop_reason: 'end_turn',
+        usage: {
+          input_tokens: 20,
+          output_tokens: 10,
+        },
       });
 
       const agent = new Agent(mockClient);
@@ -137,6 +174,10 @@ describe('Agent', () => {
       mockCreate.mockResolvedValue({
         content: [{ type: 'text', text: 'Response' }],
         stop_reason: 'end_turn',
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+        },
       });
 
       const agent = new Agent(mockClient);
@@ -152,6 +193,60 @@ describe('Agent', () => {
       const messages = secondCall[0]?.messages;
       expect(messages).toBeDefined();
       expect(messages?.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('can clear conversation history', async () => {
+      mockCreate.mockResolvedValue({
+        content: [{ type: 'text', text: 'Response' }],
+        stop_reason: 'end_turn',
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+        },
+      });
+
+      const agent = new Agent(mockClient);
+      
+      await agent.chat('First message');
+      expect(agent.getHistoryLength()).toBeGreaterThan(0);
+      
+      agent.clearHistory();
+      expect(agent.getHistoryLength()).toBe(0);
+      
+      await agent.chat('Second message');
+      // After clear, should only have the new message
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Error handling', () => {
+    it('handles API errors gracefully', async () => {
+      // Mock rejection for all retry attempts (default is 3)
+      const apiError = new Error('API Error');
+      mockCreate.mockRejectedValue(apiError);
+
+      const agent = new Agent(mockClient, { maxRetries: 1 }); // Reduce retries for faster test
+      const response = await agent.chat('Test');
+
+      expect(response.error).toBe('API Error');
+      expect(response.text).toContain('An error occurred');
+    });
+
+    it('handles max_tokens stop reason', async () => {
+      mockCreate.mockResolvedValueOnce({
+        content: [{ type: 'text', text: 'Partial response' }],
+        stop_reason: 'max_tokens',
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+        },
+      });
+
+      const agent = new Agent(mockClient);
+      const response = await agent.chat('Test');
+
+      expect(response.error).toBe('max_tokens');
+      expect(response.text).toContain('truncated');
     });
   });
 });

@@ -34,7 +34,7 @@ export function Input({ onSubmit, disabled = false }: Props) {
         {value.length > 0 ? (
           <Text>{value}</Text>
         ) : (
-          <Text color="gray" dimColor>Ask Claude...</Text>
+          <Text color="gray" dimColor>Type a message...</Text>
         )}
         {!disabled && <Text color="white" dimColor>█</Text>}
       </Box>

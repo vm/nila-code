@@ -6,7 +6,7 @@ type Props = {
 
 /**
  * Parses and formats text content with code blocks and inline code
- * Similar to how Claude Code displays formatted content
+ * Similar to how Nila Code displays formatted content
  */
 function parseInlineCode(text: string): Array<{ type: 'text' | 'inlineCode'; content: string }> {
   const parts: Array<{ type: 'text' | 'inlineCode'; content: string }> = [];

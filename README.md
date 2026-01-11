@@ -1,4 +1,4 @@
-# Coding Agent
+# Nila Code
 
 A CLI-based coding assistant powered by Claude (Anthropic) that can read, edit, and create files, list directories, and run shell commands.
 
