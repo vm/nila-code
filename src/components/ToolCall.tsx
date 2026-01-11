@@ -8,33 +8,43 @@ type Props = {
   result?: string;
 };
 
-function getShortToolName(name: string): string {
-  const map: Record<string, string> = {
-    'read_file': 'read',
-    'edit_file': 'edit',
-    'list_files': 'list',
-    'run_command': 'run',
+function getToolDescription(name: string, input: Record<string, unknown>): string {
+  const filePath = input.file_path ? String(input.file_path) : null;
+  const directory = input.directory ? String(input.directory) : null;
+  const command = input.command ? String(input.command) : null;
+  
+  // Get just the filename/dirname for brevity
+  const shortPath = (path: string) => {
+    const parts = path.split('/');
+    return parts[parts.length - 1] || path;
   };
-  return map[name] || name.replace(/_/g, ' ');
-}
-
-function getMainInput(name: string, input: Record<string, unknown>): string | null {
-  if (input.file_path) return String(input.file_path);
-  if (input.directory) return String(input.directory);
-  if (input.command) return String(input.command).slice(0, 50);
-  return null;
+  
+  switch (name) {
+    case 'read_file':
+      return filePath ? `read ${shortPath(filePath)}` : 'read';
+    case 'edit_file':
+      return filePath ? `edit ${shortPath(filePath)}` : 'edit';
+    case 'list_files':
+      return directory ? `list ${directory === '.' ? './' : shortPath(directory) + '/'}` : 'list';
+    case 'run_command':
+      if (command) {
+        const truncated = command.length > 40 ? command.slice(0, 40) + '…' : command;
+        return `run ${truncated}`;
+      }
+      return 'run';
+    default:
+      return name.replace(/_/g, ' ');
+  }
 }
 
 export function ToolCall({ name, input, status, result }: Props) {
-  const shortName = getShortToolName(name);
-  const mainInput = input ? getMainInput(name, input) : null;
+  const description = getToolDescription(name, input || {});
   
   if (status === 'running') {
     return (
       <Box>
         <Text color="yellow"><Spinner type="dots" /></Text>
-        <Text color="gray"> {shortName}</Text>
-        {mainInput && <Text color="white" dimColor> {mainInput}</Text>}
+        <Text color="gray"> {description}</Text>
       </Box>
     );
   }
@@ -44,8 +54,7 @@ export function ToolCall({ name, input, status, result }: Props) {
       <Box flexDirection="column">
         <Box>
           <Text color="red">✗</Text>
-          <Text color="gray"> {shortName}</Text>
-          {mainInput && <Text color="white" dimColor> {mainInput}</Text>}
+          <Text color="gray"> {description}</Text>
         </Box>
         {result && (
           <Box paddingLeft={2}>
@@ -60,8 +69,7 @@ export function ToolCall({ name, input, status, result }: Props) {
   return (
     <Box>
       <Text color="green">✓</Text>
-      <Text color="gray"> {shortName}</Text>
-      {mainInput && <Text color="white" dimColor> {mainInput}</Text>}
+      <Text color="gray"> {description}</Text>
     </Box>
   );
 }

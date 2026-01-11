@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤖 Coding Agent
+# Coding Agent
 
 **A smart AI assistant that can read, write, and execute code in your terminal**
 
@@ -10,20 +10,20 @@
 
 *Talk to your codebase in plain English. Build, debug, and manage projects through natural conversation.*
 
-[Quick Start](#-quick-start) • [Features](#-what-can-it-do) • [Examples](#-example-session) • [Development](#-development)
+[Quick Start](#quick-start) • [Features](#what-can-it-do) • [Examples](#example-session) • [Development](#development) • [API Reference](#api-reference)
 
 ---
 
 </div>
 
-## ✨ What can it do?
+## What can it do?
 
 | Feature | Description |
 |---------|-------------|
-| 📁 **File Operations** | Read, edit, and create files with natural language commands |
-| 🔧 **Command Execution** | Run shell commands and scripts safely |
-| 📂 **Directory Navigation** | Explore and understand your project structure |
-| 🎯 **Complex Tasks** | Handle multi-step workflows automatically |
+| **File Operations** | Read, edit, and create files with natural language commands |
+| **Command Execution** | Run shell commands and scripts safely |
+| **Directory Navigation** | Explore and understand your project structure |
+| **Complex Tasks** | Handle multi-step workflows automatically |
 
 **Just ask naturally:**
 - *"Show me the package.json"*
@@ -33,7 +33,7 @@
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -44,7 +44,7 @@
 
 ```bash
 # Clone the repository
-git clone <this-repo>
+git clone https://github.com/your-username/coding-agent.git
 cd coding-agent
 
 # Install dependencies
@@ -61,7 +61,7 @@ bun start
 
 ---
 
-## 💬 How It Works
+## How It Works
 
 The assistant follows a simple workflow:
 
@@ -97,32 +97,32 @@ The assistant follows a simple workflow:
 ### Example Requests
 
 ```
-💭 "Create a React component for a todo list"
-💭 "Fix the TypeScript errors in src/utils"  
-💭 "Run the tests and show me what failed"
-💭 "Add a new API endpoint for user registration"
+"Create a React component for a todo list"
+"Fix the TypeScript errors in src/utils"  
+"Run the tests and show me what failed"
+"Add a new API endpoint for user registration"
 ```
 
 ---
 
-## 🎮 Example Session
+## Example Session
 
 ```
 You: Create a simple Express server with a health check endpoint
 
-🤖 I'll create an Express server for you...
+I'll create an Express server for you...
 
-📝 Created: server.js
-🏃 Running: npm init -y
-🏃 Running: npm install express
-📝 Created: package.json scripts
+Created: server.js
+Running: npm init -y
+Running: npm install express
+Created: package.json scripts
 
-✅ Done! Your server is ready. Run 'npm start' to launch it.
+Done! Your server is ready. Run 'npm start' to launch it.
 ```
 
 ---
 
-## 🛠 Development
+## Development
 
 ### Running Tests
 
@@ -151,7 +151,7 @@ coding-agent/
 
 ---
 
-## 🔧 Tech Stack
+## Tech Stack
 
 | Technology | Purpose |
 |------------|---------|
@@ -162,15 +162,59 @@ coding-agent/
 
 ---
 
-## 📋 Requirements
+## Requirements
 
-- ✅ Bun installed
-- ✅ Anthropic API key
-- ✅ That's it!
+- Bun installed
+- Anthropic API key
+- That's it!
 
 ---
 
-## 🤝 Contributing
+## API Reference
+
+### Available Commands
+
+The coding agent supports the following operations:
+
+- **File Operations**: `read_file`, `edit_file`, `list_files`
+- **Command Execution**: `run_command`
+- **Navigation**: Explore directories and understand project structure
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ANTHROPIC_API_KEY` | Your Anthropic Claude API key | Yes |
+
+### Configuration
+
+Create a `.env` file in your project root:
+
+```env
+ANTHROPIC_API_KEY=your-api-key-here
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**"API key not found"**
+- Ensure your `.env` file contains `ANTHROPIC_API_KEY=your-key`
+- Check that the `.env` file is in the correct directory
+
+**"Command not found: bun"**
+- Install Bun from [bun.sh](https://bun.sh)
+- Restart your terminal after installation
+
+**"Permission denied"**
+- The agent respects file permissions and won't modify protected files
+- Ensure you have write permissions in the current directory
+
+---
+
+## Contributing
 
 Contributions are welcome! Found a bug or have an idea?
 
@@ -182,7 +226,7 @@ Contributions are welcome! Found a bug or have an idea?
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -190,8 +234,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Made with ❤️ using TypeScript, Bun, and Claude AI**
+**Made with love using TypeScript, Bun, and Claude AI**
 
-[⬆ Back to Top](#-coding-agent)
+[Back to Top](#coding-agent)
 
 </div>

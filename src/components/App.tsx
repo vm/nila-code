@@ -35,32 +35,34 @@ export function App() {
     return new Agent(undefined, {
       onToolStart: (name, input) => {
         setActiveToolCalls(prev => {
-          const updated = [...prev, { name, input, status: 'running' }];
+          const updated = [...prev, { name, input, status: 'running' as const }];
           activeToolCallsRef.current = updated;
           return updated;
         });
       },
       onToolComplete: (name, result, error) => {
+        // Capture input BEFORE removing from active
+        const toolInput = activeToolCallsRef.current.find(tc => tc.name === name)?.input || {};
+        
         setActiveToolCalls(prev => {
           const updated = prev.filter(tc => tc.name !== name);
           activeToolCallsRef.current = updated;
           return updated;
         });
-        setToolCalls(prev => {
-          const toolInput = activeToolCallsRef.current.find(tc => tc.name === name)?.input || {};
-          return [...prev, {
-            name,
-            input: toolInput,
-            result,
-            error,
-          }];
-        });
+        setToolCalls(prev => [...prev, {
+          name,
+          input: toolInput,
+          result,
+          error,
+        }]);
       },
     });
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [terminalHeight, setTerminalHeight] = useState(stdout.rows || 24);
+  const [spinnerFrame, setSpinnerFrame] = useState(0);
+  const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
   // Handle Ctrl+C gracefully
   useEffect(() => {
@@ -86,6 +88,17 @@ export function App() {
       stdout.off('resize', updateSize);
     };
   }, [stdout]);
+
+  // Animate spinner when loading
+  useEffect(() => {
+    if (!isLoading) return;
+    
+    const interval = setInterval(() => {
+      setSpinnerFrame(prev => (prev + 1) % spinnerFrames.length);
+    }, 80);
+    
+    return () => clearInterval(interval);
+  }, [isLoading, spinnerFrames.length]);
 
   const handleSubmit = async (text: string) => {
     // Add user message
@@ -142,63 +155,74 @@ export function App() {
 
       {/* Messages and Tool Calls Section */}
       <Box flexDirection="column" paddingX={2} paddingY={1} flexGrow={1}>
-        {messages.map((msg, idx) => {
-          if (msg.role === 'user') {
-            return (
-              <Box key={idx} flexDirection="column">
-                <Message role={msg.role} content={msg.content} />
-              </Box>
-            );
-          }
-          return null;
-        })}
-        
-        {/* Active Tool Calls (running) */}
-        {activeToolCalls.map((toolCall, idx) => (
-          <Box key={`active-${idx}`}>
-            <ToolCall
-              name={toolCall.name}
-              input={toolCall.input}
-              status="running"
-            />
-          </Box>
-        ))}
-        
-        {/* Completed Tool Calls */}
-        {toolCalls.map((toolCall, idx) => (
-          <Box key={`done-${idx}`}>
-            <ToolCall
-              name={toolCall.name}
-              input={toolCall.input}
-              status={toolCall.error ? 'error' : 'done'}
-              result={toolCall.result}
-            />
-          </Box>
-        ))}
-        
-        {/* Assistant Messages */}
-        {messages.map((msg, idx) => {
-          if (msg.role === 'assistant') {
-            return (
-              <Box key={idx} flexDirection="column" marginTop={1}>
-                <Message role={msg.role} content={msg.content} />
-              </Box>
-            );
-          }
-          return null;
-        })}
-        
-        {isLoading && activeToolCalls.length === 0 && (
-          <Box>
-            <Text color="magenta">●</Text>
-            <Text color="gray"> thinking</Text>
-          </Box>
-        )}
-        {error && (
-          <Box>
-            <Text color="red">error: {error}</Text>
-          </Box>
-        )}
+        {(() => {
+          // Determine if we have a "current turn" in progress or just completed
+          const hasCurrentTurn = isLoading || toolCalls.length > 0;
+          // Find the last assistant message (if any) - it belongs to the current turn
+          const lastAssistantIdx = hasCurrentTurn 
+            ? messages.map(m => m.role).lastIndexOf('assistant')
+            : -1;
+          
+          return (
+            <>
+              {/* Render messages, but hold back the last assistant if it's part of current turn */}
+              {messages.map((msg, idx) => {
+                // Skip the last assistant message if we have tool calls (render it after)
+                if (idx === lastAssistantIdx && toolCalls.length > 0) {
+                  return null;
+                }
+                return (
+                  <Box key={idx} flexDirection="column" marginTop={idx > 0 ? 1 : 0}>
+                    <Message role={msg.role} content={msg.content} />
+                  </Box>
+                );
+              })}
+              
+              {/* Active Tool Calls (running) */}
+              {activeToolCalls.map((toolCall, idx) => (
+                <Box key={`active-${idx}`}>
+                  <ToolCall
+                    name={toolCall.name}
+                    input={toolCall.input}
+                    status="running"
+                  />
+                </Box>
+              ))}
+              
+              {/* Completed Tool Calls */}
+              {toolCalls.map((toolCall, idx) => (
+                <Box key={`done-${idx}`}>
+                  <ToolCall
+                    name={toolCall.name}
+                    input={toolCall.input}
+                    status={toolCall.error ? 'error' : 'done'}
+                    result={toolCall.result}
+                  />
+                </Box>
+              ))}
+              
+              {/* Now render the last assistant message (after tool calls) */}
+              {lastAssistantIdx >= 0 && toolCalls.length > 0 && (
+                <Box flexDirection="column" marginTop={1}>
+                  <Message role="assistant" content={messages[lastAssistantIdx].content} />
+                </Box>
+              )}
+              
+              {/* Loading indicator */}
+              {isLoading && activeToolCalls.length === 0 && (
+                <Box marginTop={1}>
+                  <Text color="magenta">{spinnerFrames[spinnerFrame]}</Text>
+                  <Text color="gray" dimColor> working...</Text>
+                </Box>
+              )}
+              {error && (
+                <Box>
+                  <Text color="red">error: {error}</Text>
+                </Box>
+              )}
+            </>
+          );
+        })()}
       </Box>
 
       {/* Input - always at bottom */}
