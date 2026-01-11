@@ -60,6 +60,6 @@ export type AgentOptions = {
   retryDelay?: number;
   enableParallelTools?: boolean;
   onToolStart?: (id: string, name: string, input: Record<string, unknown>) => void;
-  onToolComplete?: (id: string, name: string, result: string, error?: boolean) => void;
+  onToolComplete?: (id: string, name: string, input: Record<string, unknown>, result: string, error?: boolean) => void;
 };
 

@@ -42,10 +42,7 @@ export function App() {
           return updated;
         });
       },
-      onToolComplete: (id, name, result, error) => {
-        // Capture input BEFORE removing from active (match by id)
-        const toolInput = activeToolCallsRef.current.find(tc => tc.id === id)?.input || {};
-        
+      onToolComplete: (id, name, input, result, error) => {
         setActiveToolCalls(prev => {
           const updated = prev.filter(tc => tc.id !== id);
           activeToolCallsRef.current = updated;
@@ -53,7 +50,7 @@ export function App() {
         });
         setToolCalls(prev => [...prev, {
           name,
-          input: toolInput,
+          input,
           result,
           error,
         }]);
@@ -175,19 +172,54 @@ export function App() {
                 </Box>
               )}
               
-              {/* Completed Tool Calls - skip list_files, show reads/edits/runs */}
-              {toolCalls
-                .filter(tc => tc.name !== 'list_files')
-                .map((toolCall, idx) => (
-                  <Box key={`done-${idx}`}>
-                    <ToolCall
-                      name={toolCall.name}
-                      input={toolCall.input}
-                      status={toolCall.error ? 'error' : 'done'}
-                      result={toolCall.result}
-                    />
-                  </Box>
-                ))}
+              {/* Completed Tool Calls - grouped by type */}
+              {(() => {
+                const reads = toolCalls.filter(tc => tc.name === 'read_file');
+                const edits = toolCalls.filter(tc => tc.name === 'edit_file');
+                const runs = toolCalls.filter(tc => tc.name === 'run_command');
+                
+                const getFileName = (path: string) => {
+                  const parts = path.split('/');
+                  return parts[parts.length - 1] || path;
+                };
+                
+                return (
+                  <>
+                    {/* Grouped reads */}
+                    {reads.length > 0 && (
+                      <Box>
+                        <Text color="green">✓</Text>
+                        <Text color="gray"> read </Text>
+                        <Text color="white">
+                          {reads.map(r => getFileName(String(r.input?.file_path || 'file'))).join(', ')}
+                        </Text>
+                      </Box>
+                    )}
+                    {/* Individual edits (show diff) */}
+                    {edits.map((tc, idx) => (
+                      <Box key={`edit-${idx}`}>
+                        <ToolCall
+                          name={tc.name}
+                          input={tc.input}
+                          status={tc.error ? 'error' : 'done'}
+                          result={tc.result}
+                        />
+                      </Box>
+                    ))}
+                    {/* Individual runs */}
+                    {runs.map((tc, idx) => (
+                      <Box key={`run-${idx}`}>
+                        <ToolCall
+                          name={tc.name}
+                          input={tc.input}
+                          status={tc.error ? 'error' : 'done'}
+                          result={tc.result}
+                        />
+                      </Box>
+                    ))}
+                  </>
+                );
+              })()}
               
               {/* Now render the last assistant message (after tool calls) */}
               {lastAssistantIdx >= 0 && toolCalls.length > 0 && (

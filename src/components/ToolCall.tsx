@@ -1,10 +1,11 @@
 import { Text, Box } from 'ink';
 import Spinner from 'ink-spinner';
+import { ToolCallStatus, ToolName } from '../agent/types';
 
 type Props = {
   name: string;
   input?: Record<string, unknown>;
-  status: 'running' | 'done' | 'error';
+  status: ToolCallStatus;
   result?: string;
   showPreview?: boolean;
   count?: number;

@@ -1,13 +1,14 @@
 import { Text, Box } from 'ink';
 import { FormattedText } from './FormattedText';
+import { MessageRole } from '../agent/types';
 
 type Props = {
-  role: 'user' | 'assistant';
+  role: MessageRole;
   content: string;
 };
 
 export function Message({ role, content }: Props) {
-  const isUser = role === 'user';
+  const isUser = role === MessageRole.USER;
   
   return (
     <Box flexDirection="column">

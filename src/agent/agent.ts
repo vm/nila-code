@@ -69,12 +69,12 @@ export class Agent {
       this.options.onToolStart(toolUse.id, toolUse.name, toolUse.input);
       const result = executeTool(toolUse.name, toolUse.input);
       const isError = result.startsWith('Error:');
-      this.options.onToolComplete(toolUse.id, toolUse.name, result, isError);
+      this.options.onToolComplete(toolUse.id, toolUse.name, toolUse.input, result, isError);
       return { result, error: isError };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const result = `Error: Tool execution failed: ${errorMessage}`;
-      this.options.onToolComplete(toolUse.id, toolUse.name, result, true);
+      this.options.onToolComplete(toolUse.id, toolUse.name, toolUse.input, result, true);
       return { result, error: true };
     }
   }
