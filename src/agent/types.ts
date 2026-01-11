@@ -38,6 +38,18 @@ export enum ModelName {
   CLAUDE_SONNET_4 = 'claude-sonnet-4-20250514'
 }
 
+export enum DiffLineType {
+  ADD = 'add',
+  REMOVE = 'remove',
+  CONTEXT = 'context'
+}
+
+export enum FormattedTextPartType {
+  TEXT = 'text',
+  CODE = 'code',
+  INLINE_CODE = 'inlineCode'
+}
+
 export type ToolCall = {
   name: string;
   input: Record<string, unknown>;

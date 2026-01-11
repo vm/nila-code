@@ -1,4 +1,5 @@
 import { Text, Box } from 'ink';
+import { FormattedTextPartType } from '../agent/types';
 
 type Props = {
   content: string;
@@ -8,8 +9,8 @@ type Props = {
  * Parses and formats text content with code blocks and inline code
  * Similar to how Nila Code displays formatted content
  */
-function parseInlineCode(text: string): Array<{ type: 'text' | 'inlineCode'; content: string }> {
-  const parts: Array<{ type: 'text' | 'inlineCode'; content: string }> = [];
+function parseInlineCode(text: string): Array<{ type: FormattedTextPartType.TEXT | FormattedTextPartType.INLINE_CODE; content: string }> {
+  const parts: Array<{ type: FormattedTextPartType.TEXT | FormattedTextPartType.INLINE_CODE; content: string }> = [];
   const inlineCodeRegex = /`([^`]+)`/g;
   let lastIndex = 0;
   let match;
@@ -17,12 +18,12 @@ function parseInlineCode(text: string): Array<{ type: 'text' | 'inlineCode'; con
   while ((match = inlineCodeRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
       parts.push({
-        type: 'text',
+        type: FormattedTextPartType.TEXT,
         content: text.slice(lastIndex, match.index),
       });
     }
     parts.push({
-      type: 'inlineCode',
+      type: FormattedTextPartType.INLINE_CODE,
       content: match[1],
     });
     lastIndex = match.index + match[0].length;
@@ -30,16 +31,16 @@ function parseInlineCode(text: string): Array<{ type: 'text' | 'inlineCode'; con
   
   if (lastIndex < text.length) {
     parts.push({
-      type: 'text',
+      type: FormattedTextPartType.TEXT,
       content: text.slice(lastIndex),
     });
   }
   
-  return parts.length > 0 ? parts : [{ type: 'text', content: text }];
+  return parts.length > 0 ? parts : [{ type: FormattedTextPartType.TEXT, content: text }];
 }
 
 export function FormattedText({ content }: Props) {
-  const parts: Array<{ type: 'text' | 'code'; content: string; language?: string }> = [];
+  const parts: Array<{ type: FormattedTextPartType.TEXT | FormattedTextPartType.CODE; content: string; language?: string }> = [];
   
   // Parse code blocks first (```language\ncode\n```)
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
@@ -51,13 +52,13 @@ export function FormattedText({ content }: Props) {
     if (match.index > lastIndex) {
       const textBefore = content.slice(lastIndex, match.index);
       if (textBefore.trim()) {
-        parts.push({ type: 'text', content: textBefore });
+        parts.push({ type: FormattedTextPartType.TEXT, content: textBefore });
       }
     }
     
     // Add code block
     parts.push({
-      type: 'code',
+      type: FormattedTextPartType.CODE,
       content: match[2],
       language: match[1] || 'text',
     });
@@ -69,20 +70,20 @@ export function FormattedText({ content }: Props) {
   if (lastIndex < content.length) {
     const textAfter = content.slice(lastIndex);
     if (textAfter.trim()) {
-      parts.push({ type: 'text', content: textAfter });
+      parts.push({ type: FormattedTextPartType.TEXT, content: textAfter });
     }
   }
   
   // If no parts found, treat entire content as text
   if (parts.length === 0) {
-    parts.push({ type: 'text', content });
+    parts.push({ type: FormattedTextPartType.TEXT, content });
   }
   
   // Render parts
   return (
     <Box flexDirection="column">
       {parts.map((part, idx) => {
-        if (part.type === 'code') {
+        if (part.type === FormattedTextPartType.CODE) {
           const lines = part.content.split('\n');
           return (
             <Box key={idx} flexDirection="column" marginY={1}>
@@ -110,7 +111,7 @@ export function FormattedText({ content }: Props) {
         return (
           <Box key={idx} flexDirection="column">
             {textParts.map((textPart, textIdx) => {
-              if (textPart.type === 'inlineCode') {
+              if (textPart.type === FormattedTextPartType.INLINE_CODE) {
                 return (
                   <Text key={textIdx} color="cyan" wrap="wrap">
                     {textPart.content}

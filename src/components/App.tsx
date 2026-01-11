@@ -5,11 +5,12 @@ import { Agent } from '../agent/agent';
 import { Message } from './Message';
 import { ToolCall } from './ToolCall';
 import { Input } from './Input';
+import { MessageRole, ToolCallStatus, ToolName } from '../agent/types';
 import type { ToolCall as ToolCallType } from '../agent/types';
 import { cwd } from 'node:process';
 
 type MessageItem = {
-  role: 'user' | 'assistant';
+  role: MessageRole;
   content: string;
 };
 
@@ -17,7 +18,7 @@ type ActiveToolCall = {
   id: string;
   name: string;
   input: Record<string, unknown>;
-  status: 'running';
+  status: ToolCallStatus.RUNNING;
 };
 
 export function App() {
@@ -37,7 +38,7 @@ export function App() {
     return new Agent(undefined, {
       onToolStart: (id, name, input) => {
         setActiveToolCalls(prev => {
-          const updated = [...prev, { id, name, input, status: 'running' as const }];
+          const updated = [...prev, { id, name, input, status: ToolCallStatus.RUNNING }];
           activeToolCallsRef.current = updated;
           return updated;
         });
@@ -88,7 +89,7 @@ export function App() {
 
   const handleSubmit = async (text: string) => {
     // Add user message
-    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setMessages(prev => [...prev, { role: MessageRole.USER, content: text }]);
     setIsLoading(true);
     setError(null);
     setToolCalls([]);
@@ -99,7 +100,7 @@ export function App() {
       
       // Add assistant response
       setMessages(prev => [...prev, { 
-        role: 'assistant', 
+        role: MessageRole.ASSISTANT, 
         content: response.text,
       }]);
       
@@ -146,7 +147,7 @@ export function App() {
           const hasCurrentTurn = isLoading || toolCalls.length > 0;
           // Find the last assistant message (if any) - it belongs to the current turn
           const lastAssistantIdx = hasCurrentTurn 
-            ? messages.map(m => m.role).lastIndexOf('assistant')
+            ? messages.map(m => m.role).lastIndexOf(MessageRole.ASSISTANT)
             : -1;
           
           return (
@@ -174,9 +175,9 @@ export function App() {
               
               {/* Completed Tool Calls - grouped by type */}
               {(() => {
-                const reads = toolCalls.filter(tc => tc.name === 'read_file');
-                const edits = toolCalls.filter(tc => tc.name === 'edit_file');
-                const runs = toolCalls.filter(tc => tc.name === 'run_command');
+                const reads = toolCalls.filter(tc => tc.name === ToolName.READ_FILE);
+                const edits = toolCalls.filter(tc => tc.name === ToolName.EDIT_FILE);
+                const runs = toolCalls.filter(tc => tc.name === ToolName.RUN_COMMAND);
                 
                 const getFileName = (path: string) => {
                   const parts = path.split('/');
@@ -201,7 +202,7 @@ export function App() {
                         <ToolCall
                           name={tc.name}
                           input={tc.input}
-                          status={tc.error ? 'error' : 'done'}
+                          status={tc.error ? ToolCallStatus.ERROR : ToolCallStatus.DONE}
                           result={tc.result}
                         />
                       </Box>
@@ -212,7 +213,7 @@ export function App() {
                         <ToolCall
                           name={tc.name}
                           input={tc.input}
-                          status={tc.error ? 'error' : 'done'}
+                          status={tc.error ? ToolCallStatus.ERROR : ToolCallStatus.DONE}
                           result={tc.result}
                         />
                       </Box>
@@ -224,7 +225,7 @@ export function App() {
               {/* Now render the last assistant message (after tool calls) */}
               {lastAssistantIdx >= 0 && toolCalls.length > 0 && (
                 <Box flexDirection="column" marginTop={1}>
-                  <Message role="assistant" content={messages[lastAssistantIdx].content} />
+                  <Message role={MessageRole.ASSISTANT} content={messages[lastAssistantIdx].content} />
                 </Box>
               )}
               
