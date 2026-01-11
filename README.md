@@ -30,19 +30,30 @@ bun start
 **Important:** The agent operates in whatever directory you run `bun start` from. The working directory is displayed at the top of the UI when you start the app.
 
 **How to use:**
-1. **Navigate to your project directory** before starting the agent
+1. Start the agent (it will use the current directory)
 2. Type your message in natural language
 3. Press **Enter** to send
 4. The agent will execute tools as needed to complete your request
 5. Press **Ctrl+C** to quit
 
+**Changing directories:**
+You can change the working directory from within the app using the `cd` command:
+- `cd /absolute/path/to/project` - Change to absolute path
+- `cd ../sibling-project` - Change to relative path
+- `cd ~/Projects/my-app` - Change using home directory shortcut
+
 **Example workflow:**
 ```bash
-# Work on a specific project
-cd ~/Projects/my-web-app
+# Start the agent
 bun start
 
-# Now all file operations happen in ~/Projects/my-web-app
+# In the app, change to your project:
+> cd ~/Projects/my-web-app
+Changed working directory to: /Users/you/Projects/my-web-app
+
+# Now all file operations happen in that directory
+> List files
+> Create a new file
 ```
 
 ## Examples
