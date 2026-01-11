@@ -38,11 +38,13 @@ coding-agent/
 │       ├── index.ts           # Tool definitions & dispatcher
 │       ├── read-file.ts       # read_file implementation
 │       ├── edit-file.ts       # edit_file implementation
+│       ├── list-files.ts      # list_files implementation
 │       └── run-command.ts     # run_command implementation
 └── tests/
     ├── tools/
     │   ├── read-file.test.ts
     │   ├── edit-file.test.ts
+    │   ├── list-files.test.ts
     │   ├── run-command.test.ts
     │   └── index.test.ts      # Dispatcher tests
     └── agent/
@@ -77,6 +79,7 @@ Each feature follows **Red → Green → Refactor**:
     "dependencies": {
       "@anthropic-ai/sdk": "latest",
       "ink": "^5.0.1",
+      "ink-spinner": "^5.0.0",
       "react": "^18.3.1"
     },
     "devDependencies": {
@@ -109,36 +112,14 @@ Each feature follows **Red → Green → Refactor**:
   test-workspace/
   ```
 
-- [ ] **1.4** Create directory structure:
-  - `src/components/`
-  - `src/agent/`
-  - `src/tools/`
-  - `tests/tools/`
-  - `tests/agent/`
+- [ ] **1.4** Create `.env` (add to `.gitignore`):
+  ```
+  ANTHROPIC_API_KEY=your-api-key-here
+  ```
 
-- [ ] **1.5** Create placeholder files (empty or minimal exports):
-  - `src/index.tsx`
-  - `src/components/App.tsx`
-  - `src/components/Message.tsx`
-  - `src/components/ToolCall.tsx`
-  - `src/components/Input.tsx`
-  - `src/agent/agent.ts`
-  - `src/agent/types.ts`
-  - `src/tools/index.ts`
-  - `src/tools/read-file.ts`
-  - `src/tools/edit-file.ts`
-  - `src/tools/run-command.ts`
+- [ ] **1.5** Run `bun install`
 
-- [ ] **1.6** Create placeholder test files:
-  - `tests/tools/read-file.test.ts`
-  - `tests/tools/edit-file.test.ts`
-  - `tests/tools/run-command.test.ts`
-  - `tests/tools/index.test.ts`
-  - `tests/agent/agent.test.ts`
-
-- [ ] **1.7** Run `bun install`
-
-- [ ] **1.8** Verify `bun test` runs (0 tests, no errors)
+- [ ] **1.6** Verify setup works: `bun --version`
 
 ---
 
@@ -177,15 +158,24 @@ Write all tool tests BEFORE implementing the tools.
   - [ ] Returns error message for failing command
   - [ ] Handles commands with arguments
 
-- [ ] **2.4** `tests/tools/index.test.ts` (dispatcher):
+- [ ] **2.4** `tests/tools/list-files.test.ts`:
+  
+  Test cases:
+  - [ ] Returns list of files in directory
+  - [ ] Returns error for non-existent directory
+  - [ ] Excludes hidden files by default
+  - [ ] Shows directories with trailing `/`
+
+- [ ] **2.5** `tests/tools/index.test.ts` (dispatcher):
   
   Test cases:
   - [ ] Routes `read_file` to readFile function
   - [ ] Routes `edit_file` to editFile function
   - [ ] Routes `run_command` to runCommand function
+  - [ ] Routes `list_files` to listFiles function
   - [ ] Returns error for unknown tool name
 
-- [ ] **2.5** Run `bun test` - all tests should FAIL (Red)
+- [ ] **2.6** Run `bun test` - all tests should FAIL (Red)
 
 ---
 
@@ -221,11 +211,20 @@ Implement tools to make tests pass.
   }
   ```
 
-- [ ] **3.4** `src/tools/index.ts`:
+- [ ] **3.4** `src/tools/list-files.ts`:
+  ```typescript
+  import { readdirSync } from 'node:fs';
+  
+  export function listFiles(path: string): string {
+    // Implementation - return formatted list
+  }
+  ```
+
+- [ ] **3.5** `src/tools/index.ts`:
   - Export tool definitions array (JSON schemas for Claude)
   - Export `executeTool(name: string, input: unknown): string`
 
-- [ ] **3.5** Run `bun test` - all tool tests should PASS (Green)
+- [ ] **3.6** Run `bun test` - all tool tests should PASS (Green)
 
 ---
 
@@ -236,7 +235,7 @@ Write agent tests with mocked Anthropic client.
 - [ ] **4.1** `tests/agent/agent.test.ts` setup:
   ```typescript
   import { describe, it, expect, mock, beforeEach } from 'bun:test';
-  import { Agent } from '../src/agent/agent';
+  import { Agent } from '../../src/agent/agent';
   
   // Mock Anthropic client
   const mockCreate = mock(() => {});
@@ -285,6 +284,17 @@ Write agent tests with mocked Anthropic client.
   export type MessageParam = Anthropic.MessageParam;
   export type ContentBlock = Anthropic.ContentBlock;
   export type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
+  
+  export type ToolCall = {
+    name: string;
+    input: Record<string, unknown>;
+    result: string;
+  };
+  
+  export type AgentResponse = {
+    text: string;
+    toolCalls: ToolCall[];
+  };
   ```
 
 - [ ] **5.2** `src/agent/agent.ts`:
@@ -419,7 +429,14 @@ Write agent tests with mocked Anthropic client.
 
 - [ ] **7.2** Add system prompt:
   ```typescript
-  const SYSTEM_PROMPT = `You are a helpful coding assistant...`;
+  const SYSTEM_PROMPT = `You are a helpful coding assistant with access to tools for reading, editing, and creating files, listing directory contents, and running shell commands.
+
+When the user asks you to perform a task:
+1. Break it down into steps
+2. Use the available tools to accomplish each step
+3. Explain what you're doing as you go
+
+Always prefer editing existing files over creating new ones when appropriate. Be concise but informative.`;
   ```
 
 - [ ] **7.3** Handle Ctrl+C gracefully:
