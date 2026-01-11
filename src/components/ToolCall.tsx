@@ -6,83 +6,49 @@ type Props = {
   input?: Record<string, unknown>;
   status: 'running' | 'done' | 'error';
   result?: string;
-  count?: number;
 };
 
-function formatToolName(name: string): string {
-  return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+function getShortToolName(name: string): string {
+  const map: Record<string, string> = {
+    'read_file': 'read',
+    'edit_file': 'edit',
+    'list_files': 'list',
+    'run_command': 'run',
+  };
+  return map[name] || name.replace(/_/g, ' ');
 }
 
-function formatFilePath(path: string): string {
-  // Highlight file paths
-  if (path.includes('/') || path.includes('\\')) {
-    return path;
-  }
-  return path;
+function getMainInput(name: string, input: Record<string, unknown>): string | null {
+  if (input.file_path) return String(input.file_path);
+  if (input.directory) return String(input.directory);
+  if (input.command) return String(input.command).slice(0, 50);
+  return null;
 }
 
-function getToolIcon(name: string): string {
-  if (name.includes('read')) return '📖';
-  if (name.includes('edit') || name.includes('write')) return '✏️';
-  if (name.includes('list')) return '📂';
-  if (name.includes('run') || name.includes('command')) return '🏃';
-  return '🔧';
-}
-
-export function ToolCall({ name, input, status, result, count }: Props) {
-  const displayName = formatToolName(name);
-  const icon = getToolIcon(name);
+export function ToolCall({ name, input, status, result }: Props) {
+  const shortName = getShortToolName(name);
+  const mainInput = input ? getMainInput(name, input) : null;
   
   if (status === 'running') {
     return (
-      <Box flexDirection="column" paddingX={1}>
-        <Box>
-          <Text>
-            <Text color="yellow">
-              <Spinner type="dots" />
-            </Text>
-            <Text color="yellow" bold> {icon} </Text>
-            <Text color="yellow">{displayName}</Text>
-            {count && count > 1 && (
-              <Text color="yellow" dimColor> ({count}×)</Text>
-            )}
-          </Text>
-        </Box>
-        {input && Object.keys(input).length > 0 && (
-          <Box paddingLeft={4} marginTop={0} flexDirection="column">
-            {Object.entries(input).slice(0, 2).map(([key, value]) => {
-              const val = typeof value === 'string' ? value : JSON.stringify(value);
-              const displayVal = val.length > 40 ? val.substring(0, 40) + '...' : val;
-              return (
-                <Text key={key} wrap="wrap">
-                  <Text color="cyan" dimColor>{key}</Text>: <Text color="white">{displayVal}</Text>
-                </Text>
-              );
-            })}
-            {Object.keys(input).length > 2 && (
-              <Text color="gray" dimColor>...</Text>
-            )}
-          </Box>
-        )}
+      <Box>
+        <Text color="yellow"><Spinner type="dots" /></Text>
+        <Text color="gray"> {shortName}</Text>
+        {mainInput && <Text color="white" dimColor> {mainInput}</Text>}
       </Box>
     );
   }
 
   if (status === 'error') {
     return (
-      <Box flexDirection="column" paddingX={1}>
+      <Box flexDirection="column">
         <Box>
-          <Text>
-            <Text color="red" bold>❌ </Text>
-            <Text color="red" bold>{icon} </Text>
-            <Text color="red" bold>{displayName}</Text>
-            {count && count > 1 && (
-              <Text color="red" dimColor> ({count}×)</Text>
-            )}
-          </Text>
+          <Text color="red">✗</Text>
+          <Text color="gray"> {shortName}</Text>
+          {mainInput && <Text color="white" dimColor> {mainInput}</Text>}
         </Box>
         {result && (
-          <Box paddingLeft={4} marginTop={0}>
+          <Box paddingLeft={2}>
             <Text color="red" dimColor wrap="wrap">{result}</Text>
           </Box>
         )}
@@ -92,40 +58,10 @@ export function ToolCall({ name, input, status, result, count }: Props) {
 
   // status === 'done'
   return (
-    <Box flexDirection="column" paddingX={1}>
-      <Box>
-        <Text>
-          <Text color="green" bold>✓ </Text>
-          <Text color="green" bold>{icon} </Text>
-          <Text color="green">{displayName}</Text>
-          {count && count > 1 && (
-            <Text color="green" dimColor> ({count}×)</Text>
-          )}
-        </Text>
-      </Box>
-        {input && Object.keys(input).length > 0 && (
-          <Box paddingLeft={4} marginTop={0} flexDirection="column">
-            {Object.entries(input).slice(0, 2).map(([key, value]) => {
-              const val = typeof value === 'string' ? formatFilePath(value) : JSON.stringify(value);
-              const displayVal = val.length > 50 ? val.substring(0, 50) + '...' : val;
-              return (
-                <Text key={key} wrap="wrap">
-                  <Text color="cyan" dimColor>{key}</Text>: <Text color="white">{displayVal}</Text>
-                </Text>
-              );
-            })}
-            {Object.keys(input).length > 2 && (
-              <Text color="gray" dimColor>...</Text>
-            )}
-          </Box>
-        )}
-      {result && result.length > 0 && (
-        <Box paddingLeft={4} marginTop={0}>
-          <Text color="gray" dimColor wrap="wrap">
-            {result.length > 300 ? result.substring(0, 300) + '...' : result}
-          </Text>
-        </Box>
-      )}
+    <Box>
+      <Text color="green">✓</Text>
+      <Text color="gray"> {shortName}</Text>
+      {mainInput && <Text color="white" dimColor> {mainInput}</Text>}
     </Box>
   );
 }

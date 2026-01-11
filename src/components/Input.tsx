@@ -27,22 +27,14 @@ export function Input({ onSubmit, disabled = false }: Props) {
 
   return (
     <Box flexDirection="row" alignItems="center">
-      <Text>
-        {disabled ? (
-          <Text color="yellow" dimColor>⏳</Text>
-        ) : (
-          <Text color="cyan" bold>❯</Text>
-        )}
-      </Text>
+      <Text color={disabled ? 'gray' : 'magenta'} bold>›</Text>
       <Box marginLeft={1} flexGrow={1}>
         {value.length > 0 ? (
           <Text color="white">{value}</Text>
         ) : (
-          <Text color="gray" dimColor>Type a message...</Text>
+          <Text color="gray" dimColor>{disabled ? 'working...' : ''}</Text>
         )}
-        {!disabled && (
-          <Text color="cyan" bold>█</Text>
-        )}
+        {!disabled && <Text color="magenta">▌</Text>}
       </Box>
     </Box>
   );
