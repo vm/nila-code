@@ -1,0 +1,20 @@
+{
+  "name": "coding-agent",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.tsx",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "ink": "^5.0.1",
+    "ink-spinner": "^5.0.0",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^18.3.12"
+  }
+}
+
