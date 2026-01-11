@@ -1,0 +1,98 @@
+import { readFile } from './read-file';
+import { editFile } from './edit-file';
+import { runCommand } from './run-command';
+import { listFiles } from './list-files';
+
+// Tool definitions for Claude API
+export const tools = [
+  {
+    name: 'read_file',
+    description: 'Read the contents of a file',
+    input_schema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Path to the file to read',
+        },
+      },
+      required: ['path'],
+    },
+  },
+  {
+    name: 'edit_file',
+    description: 'Edit a file by replacing a string with another string, or create a new file if old_str is empty',
+    input_schema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Path to the file to edit',
+        },
+        old_str: {
+          type: 'string',
+          description: 'The string to replace. If empty, creates a new file with new_str as content',
+        },
+        new_str: {
+          type: 'string',
+          description: 'The string to replace old_str with',
+        },
+      },
+      required: ['path', 'old_str', 'new_str'],
+    },
+  },
+  {
+    name: 'run_command',
+    description: 'Run a shell command and return its output',
+    input_schema: {
+      type: 'object',
+      properties: {
+        command: {
+          type: 'string',
+          description: 'The shell command to run',
+        },
+      },
+      required: ['command'],
+    },
+  },
+  {
+    name: 'list_files',
+    description: 'List files and directories in a given path',
+    input_schema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Path to the directory to list',
+        },
+      },
+      required: ['path'],
+    },
+  },
+];
+
+export function executeTool(name: string, input: unknown): string {
+  const inputObj = input as Record<string, unknown>;
+
+  switch (name) {
+    case 'read_file':
+      return readFile(inputObj.path as string);
+
+    case 'edit_file':
+      return editFile(
+        inputObj.path as string,
+        inputObj.old_str as string,
+        inputObj.new_str as string
+      );
+
+    case 'run_command':
+      return runCommand(inputObj.command as string);
+
+    case 'list_files':
+      return listFiles(inputObj.path as string);
+
+    default:
+      return `Error: Unknown tool "${name}"`;
+  }
+}
+
