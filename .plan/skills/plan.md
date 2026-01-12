@@ -41,12 +41,50 @@ Fetch and process YouTube video transcripts.
 Run `python cli.py <video_id>` to get transcript
 ```
 
+## Files to Modify
+
+### 1. `src/agent/types.ts` (Lines 18-23)
+- `ToolName` enum with 4 tools
+- Consider adding `LOAD_SKILL` or handle at higher level
+```typescript
+type SkillMetadata = {
+  name: string;
+  description: string;
+  scripts: string[];
+  usage: string;
+};
+```
+
+### 2. `src/tools/index.ts` (Lines 75-98)
+- `executeTool()` dispatcher
+- After custom commands, add skill detection here
+- Check if path is directory, look for skill.md
+
+### 3. `src/agent/agent.ts` (Lines 14-28)
+- `getSystemPrompt()` could accept skill context
+- Lines 133-135: API call uses tools array
+- Inject skill instructions into system prompt dynamically
+
+### 4. `src/components/Input.tsx` (Lines 14-27)
+- Detect `/` for command/skill
+- Lines 17-20: Submit handler - intercept skill commands
+
+### 5. NEW: `src/skills/skill-loader.ts`
+- `detectSkill(input: string): string | null`
+- `loadSkillMetadata(skillPath: string): SkillMetadata`
+- `findSkillByName(name: string): string | null`
+
+## Patterns to Follow
+- Directory reading: list-files.ts lines 4-31 (readdirSync, filter hidden)
+- File reading: read-file.ts lines 3-13 (readFileSync wrapper)
+- Callback pattern: agent.ts lines 37-54 (onToolStart, onToolComplete)
+
 ## Implementation Steps
 1. Extend custom commands to support directories
-2. If command path is directory, look for skill.md
-3. Read skill.md into context
-4. Agent can then read individual scripts as needed using read_file
-5. Scripts can be executed via run_command
+2. Create `src/skills/skill-loader.ts` utility
+3. If command path is directory, look for skill.md
+4. Read skill.md into context
+5. Agent reads scripts via read_file, executes via run_command
 
 ## Relationship to Custom Commands
 - Once custom commands work, skills are: "also allow directories"
@@ -55,5 +93,6 @@ Run `python cli.py <video_id>` to get transcript
 
 ## Testing
 - Test skill directory detection
-- Test skill.md loading
+- Test skill.md loading and parsing
 - Test script execution from skill
+- Test skill context injection into system prompt

@@ -9,16 +9,58 @@ Track last modified time of files to prevent overwriting changes made by externa
 - Compares "last time Claude modified this file" vs current mtime
 - If modified externally, re-read file before editing
 
+## Files to Modify
+
+### 1. NEW: `src/tools/file-tracker.ts`
+- Store map of `filepath -> {mtime: number, mtimeMs: number, size: number}`
+- `recordFileRead(path: string): void` - capture current file stats
+- `checkFileModified(path: string): boolean` - compare current vs recorded
+- `getLastRecordedMtime(path: string): number | null`
+- `clearTracker(): void` - reset on demand
+
+### 2. `src/tools/read-file.ts` (Lines 1-13)
+- Import tracker module
+- After successful read, call `tracker.recordFileRead(path)`
+- Return content as normal
+
+### 3. `src/tools/edit-file.ts` (Lines 1-47)
+- Import tracker module
+- Before editing (line 19-23), check `tracker.checkFileModified(path)`
+- If modified externally: return `Error: File modified externally. Please re-read file first.`
+- After successful write (line 38), update recorded mtime
+
+### 4. `src/agent/types.ts` (Optional)
+```typescript
+export type FileMetadata = {
+  path: string;
+  mtime: number;
+  mtimeMs: number;
+  size: number;
+};
+```
+
+## Patterns to Follow
+- Error handling: try-catch with `Error: ` prefix (edit-file.ts, read-file.ts)
+- File stats: Use `statSync()` like list-files.ts lines 14-16
+- Testing: Use `mkdtempSync` from node:os tmpdir()
+
 ## Implementation Steps
-1. Create internal file tracker (map of filepath -> last read/modified timestamp)
-2. On read_file: record mtime
-3. On edit_file:
-   - Check current mtime vs recorded mtime
-   - If different, re-read file first and inform model
-   - Then apply edit
-4. Consider using fs.watch or chokidar for real-time notifications
+1. Create `src/tools/file-tracker.ts` with metadata tracking map
+2. Update `src/tools/read-file.ts` to record mtime on read
+3. Update `src/tools/edit-file.ts` to check mtime before edit
+4. On mtime mismatch, return error prompting re-read
+5. After successful write, update recorded mtime
+6. Write tests in `tests/tools/file-tracker.test.ts`
+
+## Re-read Workflow
+When edit detects external modification:
+1. Model receives error: "File modified externally. Please re-read..."
+2. Model calls read_file tool again
+3. Model retries edit with updated content
 
 ## Testing
-- Test external modification detection
-- Test that edits fail gracefully when file changed
-- Test re-read behavior
+- Test external file modification between read and edit
+- Test multiple sequential edits to same file
+- Test parallel reads of same file
+- Test file deleted externally before edit
+- Test file permission changed externally
