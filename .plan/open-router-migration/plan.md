@@ -5,8 +5,8 @@ Make the agent work with non-Anthropic models via OpenRouter.
 
 ## Key Points from Discussion
 - Tools represented completely differently between providers
-- Anthropic: tools in system message, tool response is assistant message with type "tool_response"
-- OpenAI/others: tools are a tool_call object, separate tool response message type
+- Anthropic: tools passed as separate `tools` parameter, tool results are user messages with `tool_result` content blocks
+- OpenAI/others: tools are a `tools` array with `function` objects, tool results are separate `tool` role messages
 - OpenRouter uses OpenAI format
 - If starting from Anthropic, need to rebuild for OpenRouter
 - If using OpenAI format with OpenRouter, it's just a URL change
@@ -95,8 +95,16 @@ interface Provider {
 - Keep `@anthropic-ai/sdk` for Anthropic
 - Add OpenRouter SDK or use axios for direct HTTP
 
+## Streaming Differences
+- Anthropic: Uses `stream=true`, yields `content_block_delta` events
+- OpenAI: Uses `stream=true`, yields `delta` chunks with different structure
+- Need to normalize streaming responses in adapters
+
 ## Testing
+Location: `tests/providers/`
+
 - Test Anthropic adapter (existing behavior)
 - Test OpenRouter adapter with various models
 - Test tool call/response conversion
 - Test message round-trip: internal → provider → internal
+- Test streaming normalization

@@ -58,9 +58,17 @@ When edit detects external modification:
 2. Model calls read_file tool again
 3. Model retries edit with updated content
 
+## State Persistence
+- Tracker state is **per-session only** (not persisted to disk)
+- On agent restart, all files need to be re-read before editing
+- This is intentional: avoids stale state from previous sessions
+
 ## Testing
+Location: `tests/tools/file-tracker.test.ts`
+
 - Test external file modification between read and edit
 - Test multiple sequential edits to same file
 - Test parallel reads of same file
 - Test file deleted externally before edit
 - Test file permission changed externally
+- Test tracker reset on clearTracker()

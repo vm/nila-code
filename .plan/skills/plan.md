@@ -3,6 +3,10 @@
 ## Overview
 Custom commands with a directory structure that can include scripts and multiple files.
 
+## Dependencies
+- **Requires:** custom-commands feature to be implemented first
+- Skills extend the command system to support directories instead of single files
+
 ## Key Points from Discussion
 - Skill = command with a whole directory structure
 - Can contain scripts that don't exist in any repo
@@ -86,13 +90,30 @@ type SkillMetadata = {
 4. Read skill.md into context
 5. Agent reads scripts via read_file, executes via run_command
 
+## Argument Handling
+- Arguments passed after skill name: `/youtube-transcript VIDEO_ID`
+- skill.md can define expected arguments in frontmatter:
+```yaml
+---
+args:
+  - name: video_id
+    required: true
+    description: YouTube video ID
+---
+```
+- Arguments injected into context for agent to use
+- No strict validation - agent interprets arguments from skill.md instructions
+
 ## Relationship to Custom Commands
 - Once custom commands work, skills are: "also allow directories"
 - skill.md replaces command.md
 - Additional files available for agent to read
 
 ## Testing
+Location: `tests/skills/`
+
 - Test skill directory detection
 - Test skill.md loading and parsing
 - Test script execution from skill
 - Test skill context injection into system prompt
+- Test argument passing to skills

@@ -12,10 +12,12 @@ Auto-read AGENTS.md files from working directory and scan directories when readi
 
 ## Files to Modify
 
-### 1. `src/agent/agent.ts` (Lines 14-28)
-- `getSystemPrompt()` is static; needs enhancement to append AGENTS.md content
+### 1. `src/agent/agent.ts` (Lines 14-28, 160-165)
+- DO NOT modify `getSystemPrompt()` - this breaks prompt cache
+- Instead, inject AGENTS.md content as a user message in conversation
 - Add module-level cache: `let loadedAgentsMdContent = ''`
 - Add method: `loadAgentsMdForPath(filePath: string): Promise<void>`
+- In `chat()`, prepend AGENTS.md content to first user message if present
 
 ### 2. `src/tools/read-file.ts` (Lines 3-13)
 - After successful read, scan parent directory for AGENTS.md
@@ -46,11 +48,14 @@ Auto-read AGENTS.md files from working directory and scan directories when readi
 6. Handle file watching for new AGENTS.md files created during session
 
 ## Testing
+Location: `tests/utils/agents-loader.test.ts`
+
 - Test AGENTS.md discovery in working directory
 - Test nested directory scanning on file read
 - Test duplicate prevention (same dir not scanned twice)
 - Test error handling for malformed/missing files
 - Verify cache is not broken (no system message modification)
+- Test content injection into conversation (not system prompt)
 
 ## Unresolved Questions
 - Should scanning go up entire parent chain or stop at project root (package.json)?

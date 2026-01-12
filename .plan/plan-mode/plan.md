@@ -14,8 +14,9 @@ A mode where the agent plans but doesn't execute file modifications.
 ## Implementation Options
 
 ### Option A: Plan Subcommand (Recommended)
-- Separate command that spawns agent without write tools
-- Writes to a single plan file only
+- Separate command that spawns agent with read-only tools
+- Available tools: `read_file`, `list_files` (NO `edit_file`, NO `run_command`)
+- Writes plan to stdout or designated plan file
 - Simpler, doesn't break cache
 
 ### Option B: Dynamic Plan Mode
@@ -37,8 +38,9 @@ A mode where the agent plans but doesn't execute file modifications.
 
 ### 3. `src/tools/index.ts` (Lines 8-73, 75-98)
 - Create `getTools(mode: string)` function returning filtered tool array
-- Plan mode: exclude EDIT_FILE, RUN_COMMAND
-- Add mode check in `executeTool()` dispatcher
+- Plan mode tools: `read_file`, `list_files` only
+- Chat mode tools: all tools (`read_file`, `list_files`, `edit_file`, `run_command`)
+- Add mode check in `executeTool()` dispatcher as safety guard
 
 ### 4. `src/components/App.tsx` (Lines 24-54, 73-92)
 - Accept `mode` prop
@@ -64,8 +66,11 @@ A mode where the agent plans but doesn't execute file modifications.
 7. Add mode validation (only allow 'chat' | 'plan')
 
 ## Testing
+Location: `tests/modes/`
+
 - Test plan mode cannot call `edit_file` tool
 - Test plan mode cannot call `run_command` tool
 - Test plan mode can call `read_file` and `list_files`
-- Test plan mode system prompt is different
+- Test plan mode system prompt includes planning instructions
 - Test chat mode has all tools available
+- Test invalid mode rejection

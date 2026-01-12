@@ -46,13 +46,21 @@ Allow users to reference files using @syntax (e.g., `@src/index.ts`) to automati
 ## Input Detection
 ```typescript
 // Regex pattern for @mentions
-const mentionPattern = /@([\w\-\.\/]+)/g;
+// Matches: @path/to/file.ts, @./relative, @../parent
+// Does NOT match: email@domain.com (requires space or start before @)
+const mentionPattern = /(?:^|\s)@([\w\-\.\/]+)/g;
 
 // Extract mentions from user input
 function extractMentions(input: string): string[] {
   return [...input.matchAll(mentionPattern)].map(m => m[1]);
 }
 ```
+
+## Escaping @ Symbol
+- To use literal `@` without triggering mention: use `\@` or `@@`
+- Email addresses naturally excluded (no space before @)
+- Example: `send to user@email.com` - not treated as mention
+- Example: `look at @src/file.ts` - treated as mention
 
 ## Context Injection Options
 
@@ -85,8 +93,12 @@ Add as tool result or system message before user query.
 - Show recent files first
 
 ## Testing
+Location: `tests/utils/mention-processor.test.ts`
+
 - Test @mention parsing
 - Test file reading on mention
 - Test non-existent file handling
 - Test directory mentions
 - Test multiple mentions in single message
+- Test email addresses are NOT treated as mentions
+- Test escaped @ symbols

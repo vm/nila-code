@@ -4,12 +4,18 @@
 User-defined slash commands loaded from a prompts directory.
 
 ## Key Points from Discussion
-- Subcommands are just a directory called "prompts"
+- Commands live in a `commands/` directory (renamed from "prompts" for clarity)
 - Check what commands exist via directory listing
 - Slash triggers search (e.g., `/make-pr`)
 - When detected, load the command's markdown file
 - Implementation: just a file read (e.g., read `make-pr.md`)
 - Keeps cache intact since it's a context addition, not system message change
+
+## Search Path Priority
+1. `./.agent/commands/` (project-local, highest priority)
+2. `~/.agent/commands/` (global, fallback)
+
+Local commands override global commands with the same name.
 
 ## Directory Structure
 ```
@@ -76,8 +82,11 @@ Input detects "/" → Extract command + args → App.handleSubmit routes to Comm
 ```
 
 ## Testing
+Location: `tests/commands/`
+
 - Test command discovery and listing
 - Test command markdown parsing
 - Test slash command detection in Input component
 - Test argument schema validation
+- Test local vs global precedence
 - Integration test: full command flow
