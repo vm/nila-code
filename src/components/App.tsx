@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Text, useApp, useStdout } from 'ink';
 import Spinner from 'ink-spinner';
 import { Agent } from '../agent/agent';
@@ -6,7 +6,6 @@ import { Message } from './Message';
 import { ToolCall } from './ToolCall';
 import { Input } from './Input';
 import { MessageRole, ToolCallStatus } from '../agent/types';
-import type { ToolCall as ToolCallType } from '../agent/types';
 import { cwd } from 'node:process';
 
 type MessageItem = {
@@ -14,41 +13,32 @@ type MessageItem = {
   content: string;
 };
 
-type ActiveToolCall = {
+type ToolCallItem = {
   id: string;
   name: string;
   input: Record<string, unknown>;
-  status: ToolCallStatus.RUNNING;
+  status: ToolCallStatus;
+  result?: string;
+  error?: boolean;
 };
 
 export function App() {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const [messages, setMessages] = useState<MessageItem[]>([]);
-  const [toolCalls, setToolCalls] = useState<ToolCallType[]>([]);
-  const [activeToolCalls, setActiveToolCalls] = useState<ActiveToolCall[]>([]);
-  const activeToolCallsRef = useRef<ActiveToolCall[]>([]);
-  
-  useEffect(() => {
-    activeToolCallsRef.current = activeToolCalls;
-  }, [activeToolCalls]);
+  const [toolCalls, setToolCalls] = useState<ToolCallItem[]>([]);
 
   const [agent] = useState(() => {
     return new Agent(undefined, {
       onToolStart: (id, name, input) => {
-        setActiveToolCalls(prev => {
-          const updated = [...prev, { id, name, input, status: ToolCallStatus.RUNNING as const }];
-          activeToolCallsRef.current = updated;
-          return updated;
-        });
+        setToolCalls(prev => [...prev, { id, name, input, status: ToolCallStatus.RUNNING }]);
       },
-      onToolComplete: (id, name, input, result, error) => {
-        setActiveToolCalls(prev => {
-          const updated = prev.filter(tc => tc.id !== id);
-          activeToolCallsRef.current = updated;
-          return updated;
-        });
-        setToolCalls(prev => [...prev, { name, input, result, error }]);
+      onToolComplete: (id, _name, _input, result, error) => {
+        setToolCalls(prev => prev.map(tc => 
+          tc.id === id 
+            ? { ...tc, status: error ? ToolCallStatus.ERROR : ToolCallStatus.DONE, result, error }
+            : tc
+        ));
       },
     });
   });
@@ -75,17 +65,14 @@ export function App() {
     setIsLoading(true);
     setError(null);
     setToolCalls([]);
-    setActiveToolCalls([]);
 
     try {
       const response = await agent.chat(text);
       setMessages(prev => [...prev, { role: MessageRole.ASSISTANT, content: response.text }]);
-      setActiveToolCalls([]);
       if (response.error) setError(response.error);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
-      setActiveToolCalls([]);
     } finally {
       setIsLoading(false);
     }
@@ -137,34 +124,21 @@ export function App() {
           );
         })}
         
-        {isLoading && activeToolCalls.length === 0 && toolCalls.length === 0 && (
+        {isLoading && toolCalls.length === 0 && (
           <Box marginTop={messages.length > 0 ? 1 : 0}>
             <Text color="yellow"><Spinner type="dots" /></Text>
             <Text color="gray"> thinking</Text>
           </Box>
         )}
 
-        {activeToolCalls.length > 0 && (
-          <Box marginTop={messages.length > 0 ? 1 : 0} flexDirection="column">
-            {activeToolCalls.map(tc => (
+        {toolCalls.length > 0 && (
+          <Box flexDirection="column" marginTop={messages.length > 0 ? 1 : 0}>
+            {toolCalls.map(tc => (
               <ToolCall
                 key={tc.id}
                 name={tc.name}
                 input={tc.input}
-                status={ToolCallStatus.RUNNING}
-              />
-            ))}
-          </Box>
-        )}
-
-        {toolCalls.length > 0 && (
-          <Box flexDirection="column" marginTop={messages.length > 0 && activeToolCalls.length === 0 ? 1 : 0}>
-            {toolCalls.map((tc, idx) => (
-              <ToolCall
-                key={idx}
-                name={tc.name}
-                input={tc.input}
-                status={tc.error ? ToolCallStatus.ERROR : ToolCallStatus.DONE}
+                status={tc.status}
                 result={tc.result}
               />
             ))}
