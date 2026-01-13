@@ -107,7 +107,58 @@ function formatToolCallHeader(tc: ToolCallItem): string {
   return target ? `${name}: ${target} (${status})` : `${name} (${status})`;
 }
 
-function truncateToolResult(name: string, result: string): string {
+function formatEditFileDiff(input?: Record<string, unknown>): string | null {
+  if (!input) return null;
+  
+  const oldStr = input.old_str as string | undefined;
+  const newStr = input.new_str as string | undefined;
+  
+  if (oldStr === undefined || newStr === undefined) return null;
+  
+  const maxTotalLines = 50;
+  const diffLines: string[] = [];
+  
+  if (oldStr === '') {
+    const newLines = newStr.split('\n');
+    const newShow = Math.min(newLines.length, maxTotalLines);
+    for (let i = 0; i < newShow; i++) {
+      diffLines.push(`+ ${newLines[i]}`);
+    }
+    if (newLines.length > maxTotalLines) {
+      diffLines.push(`... (truncated, showing ${maxTotalLines} of ${newLines.length} lines)`);
+    }
+    return diffLines.join('\n');
+  }
+  
+  const oldLines = oldStr.split('\n');
+  const newLines = newStr.split('\n');
+  const maxEach = Math.floor(maxTotalLines / 2);
+  
+  const oldShow = Math.min(oldLines.length, maxEach);
+  for (let i = 0; i < oldShow; i++) {
+    diffLines.push(`- ${oldLines[i]}`);
+  }
+  if (oldLines.length > maxEach) {
+    diffLines.push(`... (truncated, showing ${maxEach} of ${oldLines.length} removed lines)`);
+  }
+  
+  const newShow = Math.min(newLines.length, maxEach);
+  for (let i = 0; i < newShow; i++) {
+    diffLines.push(`+ ${newLines[i]}`);
+  }
+  if (newLines.length > maxEach) {
+    diffLines.push(`... (truncated, showing ${newShow} of ${newLines.length} added lines)`);
+  }
+  
+  return diffLines.join('\n');
+}
+
+function truncateToolResult(name: string, result: string, input?: Record<string, unknown>): string {
+  if (name === ToolName.EDIT_FILE) {
+    const diff = formatEditFileDiff(input);
+    return diff || result;
+  }
+  
   const lines = result.split('\n');
   const totalLines = lines.length;
   
@@ -120,7 +171,6 @@ function truncateToolResult(name: string, result: string): string {
       maxLines = 100;
       break;
     case ToolName.LIST_FILES:
-    case ToolName.EDIT_FILE:
     default:
       return result;
   }
@@ -166,7 +216,7 @@ function buildTranscriptLines(params: {
     const header = formatToolCallHeader(tc);
     lines.push({ text: header, color: toolStatusColor(tc.status) });
     if (tc.result) {
-      const truncated = truncateToolResult(tc.name, tc.result);
+      const truncated = truncateToolResult(tc.name, tc.result, tc.input);
       const wrapped = wrapText(truncated, width);
       for (const w of wrapped) lines.push({ text: w, color: 'gray' });
     }

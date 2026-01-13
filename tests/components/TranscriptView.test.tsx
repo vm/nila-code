@@ -212,8 +212,7 @@ describe('TranscriptView', () => {
       expect(lastFrame()).not.toContain('truncated');
     });
 
-    it('does not truncate edit_file results', () => {
-      const result = 'File edited successfully';
+    it('shows diff for edit_file results', () => {
       const { lastFrame } = render(
         <TranscriptView
           messages={[]}
@@ -221,7 +220,7 @@ describe('TranscriptView', () => {
             name: ToolName.EDIT_FILE,
             input: { path: 'test.ts', old_str: 'old', new_str: 'new' },
             status: ToolCallStatus.DONE,
-            result,
+            result: 'Updated file "test.ts"',
           }]}
           isLoading={false}
           error={null}
@@ -230,8 +229,58 @@ describe('TranscriptView', () => {
         />
       );
 
-      expect(lastFrame()).toContain(result);
+      expect(lastFrame()).toContain('- old');
+      expect(lastFrame()).toContain('+ new');
       expect(lastFrame()).not.toContain('truncated');
+    });
+
+    it('truncates large edit_file diffs', () => {
+      const oldLines = Array.from({ length: 60 }, (_, i) => `old line ${i + 1}`).join('\n');
+      const newLines = Array.from({ length: 60 }, (_, i) => `new line ${i + 1}`).join('\n');
+      const { frames } = render(
+        <TranscriptView
+          messages={[]}
+          toolCalls={[{
+            name: ToolName.EDIT_FILE,
+            input: { path: 'test.ts', old_str: oldLines, new_str: newLines },
+            status: ToolCallStatus.DONE,
+            result: 'Updated file "test.ts"',
+          }]}
+          isLoading={false}
+          error={null}
+          width={80}
+          height={200}
+        />
+      );
+
+      const fullOutput = frames.join('\n');
+      expect(fullOutput).toContain('- old line 1');
+      expect(fullOutput).toContain('- old line 25');
+      expect(fullOutput).toContain('+ new line 1');
+      expect(fullOutput).toContain('+ new line 25');
+      expect(fullOutput).toContain('truncated');
+      expect(fullOutput).toContain('25 of 60');
+    });
+
+    it('shows new content with + prefix for file creation', () => {
+      const { lastFrame } = render(
+        <TranscriptView
+          messages={[]}
+          toolCalls={[{
+            name: ToolName.EDIT_FILE,
+            input: { path: 'new.ts', old_str: '', new_str: 'const x = 1;' },
+            status: ToolCallStatus.DONE,
+            result: 'Created file "new.ts"',
+          }]}
+          isLoading={false}
+          error={null}
+          width={80}
+          height={24}
+        />
+      );
+
+      expect(lastFrame()).toContain('+ const x = 1;');
+      expect(lastFrame()).not.toContain('-');
     });
   });
 });
