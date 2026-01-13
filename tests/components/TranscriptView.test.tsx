@@ -1,10 +1,97 @@
 import { describe, it, expect } from 'bun:test';
 import { render } from 'ink-testing-library';
 import { TranscriptView } from '../../src/components/TranscriptView';
-import { MessageRole, ToolCallStatus, ToolName } from '../../src/agent/types';
+import { MessageRole, ToolCallStatus, ToolName } from '../../src/shared/types';
 
 
 describe('TranscriptView', () => {
+  it('renders error status for tool calls', () => {
+    const { lastFrame } = render(
+      <TranscriptView
+        messages={[]}
+        toolCalls={[{
+          name: ToolName.READ_FILE,
+          input: { path: 'test.ts' },
+          status: ToolCallStatus.ERROR,
+          result: 'Error: missing file',
+        }]}
+        isLoading={false}
+        error={null}
+        width={80}
+        height={24}
+      />
+    );
+
+    expect(lastFrame()).toContain('(error)');
+  });
+
+  it('renders user messages with a you prefix and wraps text', () => {
+    const { lastFrame } = render(
+      <TranscriptView
+        messages={[{ role: MessageRole.USER, content: 'hello world' }]}
+        toolCalls={[]}
+        isLoading={false}
+        error={null}
+        width={6}
+        height={24}
+      />
+    );
+
+    const output = lastFrame();
+    expect(output).toContain('you he');
+    expect(output).toContain('llo wo');
+  });
+
+  it('renders assistant messages and preserves explicit newlines', () => {
+    const { lastFrame } = render(
+      <TranscriptView
+        messages={[{ role: MessageRole.ASSISTANT, content: 'line1\nline2' }]}
+        toolCalls={[]}
+        isLoading={false}
+        error={null}
+        width={80}
+        height={24}
+      />
+    );
+
+    const output = lastFrame();
+    expect(output).toContain('line1');
+    expect(output).toContain('line2');
+  });
+
+  it('renders error text when error prop is set', () => {
+    const { lastFrame } = render(
+      <TranscriptView
+        messages={[]}
+        toolCalls={[]}
+        isLoading={false}
+        error={'Something went wrong'}
+        width={80}
+        height={24}
+      />
+    );
+
+    expect(lastFrame()).toContain('error: Something went wrong');
+  });
+
+  it('appends afterAssistant content after main transcript', () => {
+    const { lastFrame } = render(
+      <TranscriptView
+        messages={[{ role: MessageRole.ASSISTANT, content: 'first' }]}
+        afterAssistant={{ role: MessageRole.ASSISTANT, content: 'second' }}
+        toolCalls={[]}
+        isLoading={false}
+        error={null}
+        width={80}
+        height={24}
+      />
+    );
+
+    const output = lastFrame();
+    expect(output).toContain('first');
+    expect(output).toContain('second');
+  });
+
   it('renders a descriptive tool call label with the command', () => {
     const { lastFrame } = render(
       <TranscriptView
@@ -306,6 +393,24 @@ describe('TranscriptView', () => {
       expect(lastFrame()).toContain('thinking');
     });
 
+    it('shows elapsed seconds when thinkingStartTime is set', async () => {
+      const thinkingStartTime = Date.now() - 5000;
+      const { stdout } = render(
+        <TranscriptView
+          messages={[]}
+          toolCalls={[]}
+          isLoading={true}
+          thinkingStartTime={thinkingStartTime}
+          error={null}
+          width={80}
+          height={24}
+        />
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(stdout.frames.join('\n')).toContain('Thinking for 5s');
+    });
+
     it('does not show thinking when tool calls are present', () => {
       const { lastFrame } = render(
         <TranscriptView
@@ -415,6 +520,29 @@ describe('TranscriptView', () => {
       expect(output).toContain('│');
     });
 
+    it('handles empty run_command content in code block', () => {
+      const { lastFrame } = render(
+        <TranscriptView
+          messages={[]}
+          toolCalls={[{
+            name: ToolName.RUN_COMMAND,
+            input: { command: 'bun test' },
+            status: ToolCallStatus.DONE,
+            result: '',
+          }]}
+          isLoading={false}
+          error={null}
+          width={80}
+          height={24}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('── run command: bun test');
+      expect(output).toContain('│ $ bun test');
+      expect(output).toContain('│');
+    });
+
     it('truncates long command names in header', () => {
       const longCommand = 'bun test --verbose --coverage --watch --reporter=verbose --timeout=5000';
       const { lastFrame } = render(
@@ -437,5 +565,65 @@ describe('TranscriptView', () => {
       expect(output).toContain('── run command:');
       expect(output).toContain('…');
     });
+  });
+
+  it('renders edit_file tool results as plain text when diff input is missing', () => {
+    const { lastFrame } = render(
+      <TranscriptView
+        messages={[]}
+        toolCalls={[{
+          name: ToolName.EDIT_FILE,
+          input: { path: 'test.ts' },
+          status: ToolCallStatus.DONE,
+          result: 'Updated file "test.ts"',
+        }]}
+        isLoading={false}
+        error={null}
+        width={80}
+        height={24}
+      />
+    );
+
+    expect(lastFrame()).toContain('Updated file "test.ts"');
+  });
+
+  it('renders edit_file diff footer line', () => {
+    const { lastFrame } = render(
+      <TranscriptView
+        messages={[]}
+        toolCalls={[{
+          name: ToolName.EDIT_FILE,
+          input: { path: 'test.ts', old_str: 'old', new_str: 'new' },
+          status: ToolCallStatus.DONE,
+          result: 'Updated file "test.ts"',
+        }]}
+        isLoading={false}
+        error={null}
+        width={80}
+        height={40}
+      />
+    );
+
+    expect(lastFrame()).toContain('─'.repeat(60));
+  });
+
+  it('renders edit_file diff context lines', () => {
+    const { lastFrame } = render(
+      <TranscriptView
+        messages={[]}
+        toolCalls={[{
+          name: ToolName.EDIT_FILE,
+          input: { path: 'test.ts', old_str: 'same\nold', new_str: 'same\nnew' },
+          status: ToolCallStatus.DONE,
+          result: 'Updated file "test.ts"',
+        }]}
+        isLoading={false}
+        error={null}
+        width={80}
+        height={40}
+      />
+    );
+
+    expect(lastFrame()).toContain('  same');
   });
 });

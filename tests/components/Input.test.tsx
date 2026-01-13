@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, mock } from 'bun:test';
 import { render } from 'ink-testing-library';
-import { Input } from '../../src/components/Input';
+import { Input, applyInputEvent } from '../../src/components/Input';
 
 describe('Input', () => {
   describe('enabled state', () => {
@@ -49,22 +49,67 @@ describe('Input', () => {
   });
 
   describe('input logic', () => {
-    it('trim function removes whitespace', () => {
-      const text = '  hello world  ';
-      const trimmed = text.trim();
-      expect(trimmed).toBe('hello world');
+    it('updates the rendered value when typing', async () => {
+      const onSubmit = mock<(text: string) => void>(() => undefined);
+      const { lastFrame, stdin, stdout } = render(<Input onSubmit={onSubmit} />);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+      const startFrames = stdout.frames.length;
+      stdin.write('zzz');
+      for (let i = 0; i < 50; i++) {
+        if (stdout.frames.length > startFrames) break;
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+
+      const output = lastFrame() ?? '';
+      expect(output).toContain('zzz');
+      expect(output).not.toContain('ask anything...');
+      expect(onSubmit).not.toHaveBeenCalled();
     });
 
-    it('empty string after trim is falsy', () => {
-      const text = '   ';
-      const trimmed = text.trim();
-      expect(trimmed).toBeFalsy();
+    it('does not submit whitespace-only input', () => {
+      const onSubmit = mock<(text: string) => void>(() => undefined);
+      const result = applyInputEvent('   ', '', { return: true, backspace: false, delete: false, ctrl: false, meta: false });
+      expect(result.submitted).toBeNull();
+      expect(onSubmit).not.toHaveBeenCalled();
     });
 
-    it('non-empty string after trim is truthy', () => {
-      const text = '  test  ';
-      const trimmed = text.trim();
-      expect(trimmed).toBeTruthy();
+    it('ignores meta-modified input', () => {
+      const onSubmit = mock<(text: string) => void>(() => undefined);
+      const result = applyInputEvent('h', 'a', { return: false, backspace: false, delete: false, ctrl: false, meta: true });
+      expect(result.nextValue).toBe('h');
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when disabled', () => {
+      const onSubmit = mock<(text: string) => void>(() => undefined);
+      const { lastFrame, stdin } = render(<Input onSubmit={onSubmit} disabled={true} />);
+
+      stdin.write('hello');
+      stdin.write('\r');
+
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(lastFrame()).not.toContain('hello');
+    });
+
+    it('applyInputEvent appends typed characters', () => {
+      const result = applyInputEvent('', 'hi', { return: false, backspace: false, delete: false, ctrl: false, meta: false });
+      expect(result.nextValue).toBe('hi');
+      expect(result.submitted).toBeNull();
+    });
+
+    it('applyInputEvent handles backspace and delete', () => {
+      const backspaceResult = applyInputEvent('hi', '', { return: false, backspace: true, delete: false, ctrl: false, meta: false });
+      expect(backspaceResult.nextValue).toBe('h');
+
+      const deleteResult = applyInputEvent('hi', '', { return: false, backspace: false, delete: true, ctrl: false, meta: false });
+      expect(deleteResult.nextValue).toBe('h');
+    });
+
+    it('applyInputEvent submits trimmed value on return', () => {
+      const result = applyInputEvent('  hello  ', '', { return: true, backspace: false, delete: false, ctrl: false, meta: false });
+      expect(result.submitted).toBe('hello');
+      expect(result.nextValue).toBe('');
     });
   });
 });

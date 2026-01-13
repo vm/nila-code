@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Box, Text } from 'ink';
-import { MessageRole, ToolCallStatus, ToolName } from '../agent/types';
-import { formatToolCallName, formatToolCallTarget, generateUnifiedDiff, getFileName } from './tool-formatting';
+import { MessageRole, ToolCallStatus, ToolName } from '../shared/types';
+import { formatToolCallName, formatToolCallTarget, generateUnifiedDiff, getFileName } from '../shared/tool-formatting';
+import { TranscriptLines } from './TranscriptLines';
+import type { TranscriptLine } from '../shared/types';
+import { useThinkingElapsedSeconds } from '../hooks/useThinkingElapsedSeconds';
 
 type MessageItem = {
   role: MessageRole;
@@ -16,15 +17,8 @@ type ToolCallItem = {
   result?: string;
 };
 
-type Line = {
-  text: string;
-  color?: string;
-  dimColor?: boolean;
-};
-
 const READ_FILE_MAX_LINES = 50;
 const RUN_COMMAND_MAX_LINES = 100;
-const EDIT_FILE_MAX_LINES = 50;
 
 function splitLines(text: string): string[] {
   return text.split(/\r?\n/);
@@ -115,20 +109,20 @@ function truncateToolResult(name: string, result: string, input?: Record<string,
   return `${truncated}\n\n... (truncated, showing ${maxLines} of ${totalLines} lines)`;
 }
 
-function parseDiffLine(line: string, width: number): Line[] {
-  const lines: Line[] = [];
+function parseDiffLine(line: string, width: number): TranscriptLine[] {
+  const lines: TranscriptLine[] = [];
 
   if (line.startsWith('@@')) {
     const wrapped = wrapLine(line, width);
     for (const w of wrapped) {
       lines.push({ text: w, color: 'cyan', dimColor: false });
     }
-  } else if (line.startsWith('──')) {
+  } else if (/^─+$/.test(line)) {
     const wrapped = wrapLine(line, width);
     for (const w of wrapped) {
       lines.push({ text: w, color: 'gray', dimColor: true });
     }
-  } else if (/^─+$/.test(line)) {
+  } else if (line.startsWith('──')) {
     const wrapped = wrapLine(line, width);
     for (const w of wrapped) {
       lines.push({ text: w, color: 'gray', dimColor: true });
@@ -163,8 +157,8 @@ function parseDiffLine(line: string, width: number): Line[] {
   return lines;
 }
 
-function renderCodeBlock(title: string, content: string, width: number, contentColor: string, dimColor: boolean): Line[] {
-  const lines: Line[] = [];
+function renderCodeBlock(title: string, content: string, width: number, contentColor: string, dimColor: boolean): TranscriptLine[] {
+  const lines: TranscriptLine[] = [];
   const headerWidth = Math.min(60, width);
   const titlePart = `── ${title} `;
   const remainingWidth = Math.max(0, headerWidth - titlePart.length);
@@ -192,8 +186,8 @@ function renderCodeBlock(title: string, content: string, width: number, contentC
   return lines;
 }
 
-function parseToolResultLines(text: string, toolName: string, width: number, input?: Record<string, unknown>): Line[] {
-  const lines: Line[] = [];
+function parseToolResultLines(text: string, toolName: string, width: number, input?: Record<string, unknown>): TranscriptLine[] {
+  const lines: TranscriptLine[] = [];
   const logicalLines = splitLines(text);
 
   if (toolName === ToolName.EDIT_FILE) {
@@ -216,7 +210,7 @@ function parseToolResultLines(text: string, toolName: string, width: number, inp
     const titlePart = `── ${title} `;
     const remainingWidth = Math.max(0, headerWidth - titlePart.length);
     const headerLine = titlePart + '─'.repeat(remainingWidth);
-    const lines: Line[] = [];
+    const lines: TranscriptLine[] = [];
     lines.push({ text: headerLine, color: 'gray', dimColor: true });
     
     const borderWidth = Math.min(width, headerWidth);
@@ -256,7 +250,7 @@ function parseToolResultLines(text: string, toolName: string, width: number, inp
   return lines;
 }
 
-function formatToolCallHeaderColored(tc: ToolCallItem): Line {
+function formatToolCallHeaderColored(tc: ToolCallItem): TranscriptLine {
   const name = formatToolCallName(tc.name);
   const target = formatToolCallTarget(tc.name, tc.input);
   const status = toolStatusLabel(tc.status);
@@ -278,9 +272,9 @@ function buildTranscriptLines(params: {
   thinkingElapsedSeconds: number | null;
   error: string | null;
   width: number;
-}): Line[] {
+}): TranscriptLine[] {
   const { messages, toolCalls, isLoading, thinkingElapsedSeconds, error, width } = params;
-  const lines: Line[] = [];
+  const lines: TranscriptLine[] = [];
 
   for (const msg of messages) {
     if (msg.role === MessageRole.USER) {
@@ -337,28 +331,11 @@ export function TranscriptView(props: {
 }) {
   const width = Math.max(1, props.width);
   const height = Math.max(1, props.height);
-  const scrollOffset = Math.max(0, props.scrollOffset ?? 0);
-
-  const [thinkingElapsedSeconds, setThinkingElapsedSeconds] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!props.isLoading || props.toolCalls.length > 0 || !props.thinkingStartTime) {
-      setThinkingElapsedSeconds(null);
-      return;
-    }
-
-    const updateElapsed = () => {
-      const elapsed = Math.floor((Date.now() - props.thinkingStartTime!) / 1000);
-      setThinkingElapsedSeconds(elapsed);
-    };
-
-    updateElapsed();
-    const interval = setInterval(updateElapsed, 100);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [props.isLoading, props.toolCalls.length, props.thinkingStartTime]);
+  const thinkingElapsedSeconds = useThinkingElapsedSeconds({
+    isLoading: props.isLoading,
+    hasToolCalls: props.toolCalls.length > 0,
+    thinkingStartTime: props.thinkingStartTime,
+  });
 
   const allLines = buildTranscriptLines({
     messages: props.messages,
@@ -381,22 +358,5 @@ export function TranscriptView(props: {
     allLines.push(...assistantLines);
   }
 
-  const maxScrollOffset = Math.max(0, allLines.length - height);
-  const clampedOffset = Math.min(scrollOffset, maxScrollOffset);
-  const start = Math.max(0, allLines.length - height - clampedOffset);
-  const visible = allLines.slice(start, start + height);
-  const fillerCount = Math.max(0, height - visible.length);
-
-  return (
-    <Box flexDirection="column" height={height}>
-      {Array.from({ length: fillerCount }).map((_, i) => (
-        <Text key={`pad-${i}`}> </Text>
-      ))}
-      {visible.map((l, i) => (
-        <Text key={`line-${i}`} color={l.color} dimColor={l.dimColor}>
-          {l.text.length === 0 ? ' ' : l.text}
-        </Text>
-      ))}
-    </Box>
-  );
+  return <TranscriptLines lines={allLines} height={height} scrollOffset={props.scrollOffset} />;
 }

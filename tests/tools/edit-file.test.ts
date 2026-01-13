@@ -86,6 +86,12 @@ describe('editFile', () => {
     expect(result).toContain('does not exist');
   });
 
+  it('returns a descriptive error when writing fails', () => {
+    const result = editFile(testDir, '', 'content');
+    expect(result).toContain('Error: Failed to edit file');
+    expect(result).toContain(testDir);
+  });
+
   it('handles file creation with special characters in path', () => {
     const specialPath = join(testDir, 'special chars file.txt');
     
