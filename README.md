@@ -98,7 +98,7 @@ The assistant follows a simple workflow:
 
 ```
 "Create a React component for a todo list"
-"Fix the TypeScript errors in src/utils"  
+"Fix the TypeScript errors in src/shared"
 "Run the tests and show me what failed"
 "Add a new API endpoint for user registration"
 ```

@@ -1,4 +1,4 @@
-import { ToolName } from '../agent/types';
+import { ToolName } from './types';
 
 const COMMAND_TRUNCATE_LENGTH = 60;
 
@@ -22,10 +22,7 @@ export function formatToolCallName(name: string): string {
   }
 }
 
-export function formatToolCallTarget(
-  name: string,
-  input?: Record<string, unknown>
-): string | null {
+export function formatToolCallTarget(name: string, input?: Record<string, unknown>): string | null {
   const safeInput = input ?? {};
   const path = safeInput.path ? String(safeInput.path) : null;
   const command = safeInput.command ? String(safeInput.command) : null;
@@ -66,10 +63,10 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffHunk[] {
   const CONTEXT_LINES = 3;
   const MAX_DIFF_LINES = 50;
   const hunks: DiffHunk[] = [];
-  
+
   const maxLen = Math.max(oldLines.length, newLines.length);
   const maxShow = Math.min(MAX_DIFF_LINES, maxLen);
-  
+
   const diffLines: DiffLine[] = [];
   let oldCount = 0;
   let newCount = 0;
@@ -144,12 +141,8 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffHunk[] {
       if (oldLine === newLine && oldLine !== null) {
         fallbackLines.push({ type: 'context', content: oldLine });
       } else {
-        if (oldLine !== null) {
-          fallbackLines.push({ type: 'deletion', content: oldLine });
-        }
-        if (newLine !== null) {
-          fallbackLines.push({ type: 'addition', content: newLine });
-        }
+        if (oldLine !== null) fallbackLines.push({ type: 'deletion', content: oldLine });
+        if (newLine !== null) fallbackLines.push({ type: 'addition', content: newLine });
       }
     }
     hunks.push({
@@ -162,15 +155,9 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffHunk[] {
   }
 
   return hunks;
-
-  return hunks;
 }
 
-export function generateUnifiedDiff(
-  oldStr: string,
-  newStr: string,
-  filename: string
-): string[] {
+export function generateUnifiedDiff(oldStr: string, newStr: string, filename: string): string[] {
   const lines: string[] = [];
   const headerWidth = 60;
   const headerLine = `── edit file: ${filename} ${'─'.repeat(Math.max(0, headerWidth - filename.length - 13))}`;
@@ -208,13 +195,9 @@ export function generateUnifiedDiff(
         wasTruncated = true;
         break;
       }
-      if (diffLine.type === 'context') {
-        lines.push(`  ${diffLine.content}`);
-      } else if (diffLine.type === 'deletion') {
-        lines.push(`- ${diffLine.content}`);
-      } else if (diffLine.type === 'addition') {
-        lines.push(`+ ${diffLine.content}`);
-      }
+      if (diffLine.type === 'context') lines.push(`  ${diffLine.content}`);
+      else if (diffLine.type === 'deletion') lines.push(`- ${diffLine.content}`);
+      else lines.push(`+ ${diffLine.content}`);
       totalDisplayed++;
     }
     if (wasTruncated) break;
@@ -223,12 +206,11 @@ export function generateUnifiedDiff(
   const totalLines = Math.max(oldLines.length, newLines.length);
   if (wasTruncated || totalDisplayed < totalLines) {
     const shown = Math.min(totalDisplayed, MAX_DISPLAY_LINES);
-    if (shown < totalLines) {
-      lines.push(`... (truncated, showing ${shown} of ${totalLines} lines)`);
-    }
+    if (shown < totalLines) lines.push(`... (truncated, showing ${shown} of ${totalLines} lines)`);
   }
 
   lines.push('─'.repeat(headerWidth));
   return lines;
 }
+
 

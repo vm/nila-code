@@ -9,16 +9,20 @@ This plan describes a **read-only "planning" mode** for the agent: the agent can
   - safer exploration (no accidental edits)
   - structured output you can review before applying changes
 - **How you'd use it in this repo**:
-  - run the agent in plan mode to produce a plan document you can paste into an issue/PR description
-  - optionally serialize the plan to a file via a CLI flag
+  - start the interactive UI and switch into plan mode to iterate on a plan until it looks right
 
 This plan intentionally avoids implementation-sized code blocks. The source of truth should live in `src/` and be validated by `tests/`.
 
 ## How you'd run it (intended UX)
 
-- **Interactive**: `bun run start`
-- **Plan mode**: `bun run start plan "your request here"`
-- **Plan mode to file**: `bun run start plan "your request here" --output plan.md`
+Plan mode is interactive-only:
+
+- **Start UI**: `bun run start`
+- **Enter plan mode**: type `/plan` or `/plan <your request>`
+- **Iterate**: continue chatting to refine the plan (multi-turn, keeps context)
+- **Exit plan mode**: type `/normal` to return to normal mode
+
+Switching modes should clear conversation history to avoid mixing system prompts and tool availability between modes.
 
 ## Tool availability (what plan mode allows)
 
@@ -54,26 +58,35 @@ On `main`, the agent doesn't currently support plan mode. Add it by extending `A
     - `systemPrompt?: string`
     - `toolFilter?: (name: string) => boolean`
 - **Modify**: `src/agent/agent.ts`
-  - in `makeApiCallWithRetry`, use `system: this.options.systemPrompt ?? getSystemPrompt()`
+  - in `makeApiCallWithRetry`, use a stable system prompt per agent instance (via `this.getSystemPrompt()`)
   - filter tools based on `this.options.toolFilter` before passing to API
-  - add `getToolsForMode()` helper that filters out `edit_file` and `run_command` in plan mode
-- **Add**: `src/agent/plan-agent.ts`
-  - exports `createPlanAgent(client?: Anthropic): Agent`
-  - sets:
-    - `mode: 'plan'`
-    - `systemPrompt` to a "PLAN MODE" prompt
-    - `toolFilter` that blocks `edit_file` and `run_command`
-- **Modify**: `src/index.tsx`
-  - add a `plan` subcommand that uses `createPlanAgent()` and exits after printing the response
-  - support optional `--output <file>` to write the plan text
+  - add a backstop: if the assistant requests a blocked tool in plan mode, do not execute it and discard that assistant output
+- **Modify**: `src/components/App.tsx`
+  - parse `/plan` and `/normal` commands
+  - create an `Agent` configured for plan mode when appropriate
+  - show a mode indicator in the UI (e.g., `[PLAN MODE]`)
 
 This matches the existing architecture: Agent config is passed through the constructor; tools are filtered before being sent to the model.
 
+## System prompt consistency consideration
+
+**Potential issue**: If the system prompt changes mid-conversation, the new prompt applies to all messages in the conversation history, which were created with a different prompt. This can cause inconsistency.
+
+**Why plan mode is safe**: Plan mode is safe when the system prompt and tool list are kept consistent for the duration of a conversation, and mode switches clear conversation history.
+
+**Implementation approach**:
+- Store the system prompt in `this.options.systemPrompt` (computed once in constructor or via helper)
+- Use the same system prompt for all API calls in a conversation
+- When switching between plan/normal, clear history and construct a new agent for the new mode
+
+**Future consideration**:
+- Preserve a copy of the last plan text so the user can reference it after switching modes without keeping full conversation history
+
 ## Where to start in this repo
 
-- **Entry point / argument routing**: `src/index.tsx`
+- **Interactive UI**: `src/components/App.tsx`
 - **Agent core**: `src/agent/agent.ts`, `src/agent/types.ts`
-- **Existing tests to extend**: `tests/agent/agent.test.ts`, `tests/index.test.ts`
+- **Existing tests to extend**: `tests/agent/agent.test.ts`, `tests/components/*`
 
 ---
 
@@ -91,13 +104,13 @@ This matches the existing architecture: Agent config is passed through the const
 - [ ] **Plan prompt differs**: plan mode uses a plan-specific system prompt that makes "no edits" explicit
 - [ ] **Includes working directory**: prompt includes the current working directory path for grounding
 - [ ] **Custom prompt override**: when `systemPrompt` is provided in options, it overrides the default
+ 
+### Interactive UI behavior
 
-### CLI behavior
-
-- [ ] **Subcommand detection**: `plan` is detected as a first argument
-- [ ] **Prompt parsing**: the user's prompt is captured correctly (excluding flags)
-- [ ] **Optional output**: `--output <file>` writes the plan response to disk
-- [ ] **Exit code**: plan mode exits 0 on success, non-zero on error
+- [ ] **Enter plan mode**: typing `/plan` switches the app into plan mode
+- [ ] **Exit plan mode**: typing `/normal` switches back to normal mode
+- [ ] **History cleared on mode switch**: switching modes clears conversation history
+- [ ] **Mode indicator**: the UI reflects current mode
 
 ### Suggested test cases (more specific)
 
@@ -120,10 +133,8 @@ This matches the existing architecture: Agent config is passed through the const
 - **Update**: `tests/agent/agent.test.ts`
   - add test for tool filtering with `mode: 'plan'`
   - add test for custom `systemPrompt` override
-- **Add**: `tests/agent/plan-agent.test.ts`
-  - test `createPlanAgent()` returns correctly configured agent
-- **Update**: `tests/index.test.ts`
-  - allow additional CLI logic beyond just the render call
+- **Update/Add**: `tests/components/*`
+  - add tests for `/plan` and `/normal` command handling and mode indicator
 
 ---
 
@@ -133,9 +144,7 @@ This matches the existing architecture: Agent config is passed through the const
 
 - [ ] **Modify**: `src/agent/types.ts` to include mode and prompt options
 - [ ] **Modify**: `src/agent/agent.ts` to apply mode-specific tool filtering
-- [ ] **Add**: `src/agent/plan-agent.ts` for plan agent factory
-- [ ] **Modify**: `src/index.tsx` to add a `plan` CLI path (keep `render(<App />)` as the normal path)
-- [ ] **Update**: `tests/index.test.ts` to allow the new CLI branching
+- [ ] **Modify**: `src/components/App.tsx` to add interactive plan mode commands and mode indicator
 
 ## Implementation checklist (ordered)
 
@@ -148,8 +157,9 @@ This matches the existing architecture: Agent config is passed through the const
   - Verify TypeScript passes existing tests unchanged
 
 - [ ] **2) Use `systemPrompt` override in `src/agent/agent.ts`**
-  - In constructor, set `this.options.systemPrompt` default to `undefined`
-  - In `makeApiCallWithRetry`, pass `system: this.options.systemPrompt ?? getSystemPrompt()`
+  - In constructor, store `systemPrompt: options?.systemPrompt` in `this.options` (default to `undefined`)
+  - Add private method `getSystemPrompt(): string` that returns `this.options.systemPrompt ?? getSystemPrompt()` (the module-level helper)
+  - In `makeApiCallWithRetry`, pass `system: this.getSystemPrompt()` (ensures consistent prompt across all calls)
   - Verify with a unit test that the mocked API call receives the custom system prompt
 
 - [ ] **3) Implement tool filtering in `src/agent/agent.ts`**
@@ -159,31 +169,12 @@ This matches the existing architecture: Agent config is passed through the const
   - In `makeApiCallWithRetry`, use `tools: this.getFilteredTools()`
   - Verify with a test that a toolFilter excluding `edit_file` results in API call without it
 
-- [ ] **4) Add `src/agent/plan-agent.ts`**
-  - Create `getPlanSystemPrompt()` that includes:
-    - `PLAN MODE` marker
-    - explicit "do not edit files" instruction
-    - current working directory
-    - instructions to output structured plan (Files/Steps/Testing/Risks)
-  - Create `planToolFilter(name: string): boolean` that returns false for `edit_file` and `run_command`
-  - Export `createPlanAgent(client?: Anthropic): Agent` that constructs agent with:
-    - `mode: 'plan'`
-    - `systemPrompt: getPlanSystemPrompt()`
-    - `toolFilter: planToolFilter`
-  - Verify by instantiating the plan agent in a unit test
-
-- [ ] **5) Add CLI routing in `src/index.tsx`**
-  - Parse `process.argv.slice(2)` to detect `plan` subcommand
-  - If first arg is `plan`:
-    - Extract prompt from remaining args (handle quoted strings)
-    - Extract `--output <file>` if present
-    - Create plan agent via `createPlanAgent()`
-    - Call `agent.chat(prompt)`
-    - Print response to stdout
-    - If `--output` provided, write to file
-    - Exit process
-  - Else, keep the existing `render(<App />...)` path unchanged
-  - Update `tests/index.test.ts` so it still asserts the render call exists but allows additional logic
+- [ ] **4) Implement interactive plan mode in `src/components/App.tsx`**
+  - Parse `/plan` and `/normal` commands in `handleSubmit`
+  - On `/plan`, create a plan-mode agent instance and clear history
+  - On `/normal`, create a normal-mode agent instance and clear history
+  - Ensure plan mode sets `toolFilter` to block `edit_file` and `run_command`
+  - Show a mode indicator in the UI
 
 ### Output shape
 
@@ -202,21 +193,20 @@ This is the level of specificity we want (structured, but not full code):
 Title: Add plan mode
 
 Files:
-- src/index.tsx (modify): route "plan" subcommand
-- src/agent/agent.ts (modify): support tool filtering
-- src/agent/plan-agent.ts (add): plan agent factory
+- src/components/App.tsx (modify): add interactive plan mode commands + mode indicator
+- src/agent/agent.ts (modify): support tool filtering + blocked-tool backstop
 
 Steps:
-1) Parse CLI args to extract prompt and --output
-2) Create an agent configured for plan mode (filtered tool list)
-3) Print plan text; optionally write to output file
+1) Enter plan mode via `/plan`
+2) Iterate on the plan until it's acceptable
+3) Exit plan mode via `/normal` to execute changes in normal mode (history cleared)
 
 Testing:
 - bun test
 - verify edit_file is not available in plan mode
 
 Risks:
-- CLI arg parsing edge cases with quotes
+- Mode switch clears history, so user must restate key intent when switching back to normal mode
 ```
 
 ---
@@ -227,6 +217,7 @@ Risks:
 - [ ] **Plan validation**: validate required fields and warn on missing details
 - [ ] **JSON output**: optionally emit parsed plan JSON for automation via `--format json`
 - [ ] **Interactive plan approval**: show plan, ask for confirmation, then execute in normal mode
+- [ ] **Plan persistence across mode switches**: keep the last plan visible after switching to normal mode without preserving full conversation history
 
 ---
 
@@ -234,7 +225,6 @@ Risks:
 
 - [ ] In plan mode, the agent cannot make filesystem changes through tools (`edit_file` and `run_command` are filtered out)
 - [ ] The plan output clearly lists files + steps + testing notes (even if brief)
-- [ ] CLI parsing behavior is covered by tests
 - [ ] Normal mode (`bun run start`) continues to work unchanged
 
 ---
@@ -257,12 +247,14 @@ Acceptance criteria:
 ### Step 2: Make `Agent` use custom system prompt (`src/agent/agent.ts`)
 
 Implementation:
-- In constructor, add `systemPrompt: options?.systemPrompt` to options
-- In `makeApiCallWithRetry`, change line 118 to: `system: this.options.systemPrompt ?? getSystemPrompt()`
+- In constructor, add `systemPrompt: options?.systemPrompt` to `this.options` (default to `undefined`)
+- Add private method `getSystemPrompt(): string` that returns `this.options.systemPrompt ?? getSystemPrompt()` (the module-level helper)
+- In `makeApiCallWithRetry`, change line 118 to: `system: this.getSystemPrompt()` (ensures consistent prompt across all API calls in a conversation)
 
 Acceptance criteria:
-- When `systemPrompt` is provided, the API call uses it
+- When `systemPrompt` is provided, the API call uses it consistently across all calls
 - When `systemPrompt` is omitted, behavior is unchanged
+- The same system prompt is used for all API calls in a single conversation (no mid-conversation changes)
 
 ### Step 3: Define tool filtering
 
@@ -277,33 +269,18 @@ Acceptance criteria:
 - When `toolFilter` excludes `edit_file`, the API call's tools array does not contain it
 - When `toolFilter` is omitted, all tools are included
 
-### Step 4: Create plan agent factory (`src/agent/plan-agent.ts`)
+### Step 4: Add interactive plan mode in `src/components/App.tsx`
 
-- Export `createPlanAgent(client?: Anthropic): Agent`
-- Use filtered tools: `toolFilter: (name) => name !== ToolName.EDIT_FILE && name !== ToolName.RUN_COMMAND`
-- Use plan-specific system prompt with `PLAN MODE` marker
+- Add `/plan` and `/normal` command handling
+- Switch between plan/normal by clearing history and creating a new `Agent` configured for the mode
+- Display a mode indicator
 
-### Step 5: Add CLI routing in `src/index.tsx`
-
-Desired CLI UX:
-- `bun run start` → starts Ink UI (current behavior)
-- `bun run start plan "do X"` → runs plan mode once, prints output, exits `0`
-- `bun run start plan "do X" --output plan.md` → additionally writes the output to `plan.md`
-
-Implementation notes:
-- Keep the existing `render(<App />, { exitOnCtrlC: true })` codepath intact
-- Add conditional before `render` that checks `process.argv.slice(2)[0] === 'plan'`
-- For plan mode, use async IIFE or top-level await
-
-### Step 6: Update tests
+### Step 5: Update tests
 
 #### `tests/agent/agent.test.ts`
 - Add test that constructs `new Agent(mockClient, { toolFilter: (n) => n !== 'edit_file' })`
 - Assert `mockCreate.mock.calls[0][0].tools` does not include `edit_file`
 - Add test that sets `systemPrompt` and asserts the API call uses it
 
-#### `tests/agent/plan-agent.test.ts`
-- Test `createPlanAgent()` returns agent with correct configuration
-
-#### `tests/index.test.ts`
-- Update to allow additional CLI logic beyond just the render call
+#### `tests/components/*`
+- Add tests for `/plan` and `/normal` command handling and mode indicator

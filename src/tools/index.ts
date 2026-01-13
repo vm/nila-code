@@ -2,7 +2,7 @@ import { readFile } from './read-file';
 import { editFile } from './edit-file';
 import { runCommand } from './run-command';
 import { listFiles } from './list-files';
-import { ToolName } from '../agent/types';
+import { ToolName } from '../shared/types';
 
 export const tools = [
   {

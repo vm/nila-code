@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
-import { MessageRole, ToolCallStatus } from '../../src/agent/types';
-import { splitForToolCalls } from '../../src/components/transcript';
+import { MessageRole, ToolCallStatus } from '../../src/shared/types';
+import { splitForToolCalls } from '../../src/shared/transcript';
 
 describe('splitForToolCalls', () => {
   it('returns full message list when there are no tool calls', () => {
@@ -40,9 +40,7 @@ describe('splitForToolCalls', () => {
   it('does not move messages when tool calls exist and the last message is user', () => {
     const messages = [{ role: MessageRole.USER, content: 'question' }];
 
-    const toolCalls = [
-      { id: 'tool_1', name: 'list_files', input: { path: '.' }, status: ToolCallStatus.RUNNING as const },
-    ];
+    const toolCalls = [{ id: 'tool_1', name: 'list_files', input: { path: '.' }, status: ToolCallStatus.RUNNING }];
 
     const partition = splitForToolCalls({
       messages,

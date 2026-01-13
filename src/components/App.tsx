@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import { Agent } from '../agent/agent';
 import { Input } from './Input';
-import { MessageRole, ToolCallStatus } from '../agent/types';
-import { splitForToolCalls } from './transcript';
+import { MessageRole, ToolCallStatus } from '../shared/types';
+import { splitForToolCalls } from '../shared/transcript';
 import { TranscriptView } from './TranscriptView';
 import { cwd } from 'node:process';
 

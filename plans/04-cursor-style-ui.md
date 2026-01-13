@@ -21,7 +21,7 @@ This plan intentionally avoids implementation-sized code blocks. The source of t
 - **Types**: `src/agent/types.ts` (will need streaming event types)
 - **UI state**: `src/components/App.tsx` (manages tool calls and loading state)
 - **Transcript display**: `src/components/TranscriptView.tsx` (renders messages and tool outputs)
-- **Tool call display**: `src/components/ToolCall.tsx` (compact single-line view)
+- **Tool call display**: `src/components/TranscriptView.tsx` (tool call header + bordered output rendering)
 
 ---
 

@@ -4,24 +4,6 @@ export type MessageParam = Anthropic.MessageParam;
 export type ContentBlock = Anthropic.ContentBlock;
 export type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
 
-export enum MessageRole {
-  USER = 'user',
-  ASSISTANT = 'assistant'
-}
-
-export enum ToolCallStatus {
-  RUNNING = 'running',
-  DONE = 'done',
-  ERROR = 'error'
-}
-
-export enum ToolName {
-  READ_FILE = 'read_file',
-  EDIT_FILE = 'edit_file',
-  RUN_COMMAND = 'run_command',
-  LIST_FILES = 'list_files'
-}
-
 export enum ContentBlockType {
   TEXT = 'text',
   TOOL_USE = 'tool_use'
@@ -36,18 +18,6 @@ export enum StopReason {
 
 export enum ModelName {
   CLAUDE_SONNET_4 = 'claude-sonnet-4-20250514'
-}
-
-export enum DiffLineType {
-  ADD = 'add',
-  REMOVE = 'remove',
-  CONTEXT = 'context'
-}
-
-export enum FormattedTextPartType {
-  TEXT = 'text',
-  CODE = 'code',
-  INLINE_CODE = 'inlineCode'
 }
 
 export type ToolCall = {
