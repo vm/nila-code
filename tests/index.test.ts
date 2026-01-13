@@ -8,7 +8,7 @@ describe('index', () => {
 
   it('exports render call with correct structure', async () => {
     const content = await Bun.file('./src/index.tsx').text();
-    
+
     expect(content).toContain("import { render } from 'ink'");
     expect(content).toContain("import { App } from './components/App'");
     expect(content).toContain('render(<App />');

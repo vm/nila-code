@@ -53,10 +53,15 @@ describe('listFiles', () => {
   });
 
   it('handles permission denied scenarios', () => {
-    const invalidPath = join(testDir, 'very-deeply', 'nested', 'nonexistent', 'path');
-    
+    const invalidPath = join(
+      testDir,
+      'very-deeply',
+      'nested',
+      'nonexistent',
+      'path'
+    );
+
     const result = listFiles(invalidPath);
     expect(result).toContain('Error: Failed to list files');
   });
 });
-

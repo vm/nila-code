@@ -46,4 +46,3 @@ describe('readFile', () => {
     expect(result).toContain('Error: Failed to read file');
   });
 });
-

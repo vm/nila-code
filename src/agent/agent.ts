@@ -1,10 +1,10 @@
 import OpenAI from 'openai';
 import { tools, executeTool } from '../tools/index';
 import { StopReason } from './types';
-import type { 
-  Message, 
-  AgentResponse, 
-  ToolCall, 
+import type {
+  Message,
+  AgentResponse,
+  ToolCall,
   ToolCallMessage,
   AgentOptions,
 } from './types';
@@ -26,7 +26,7 @@ When the user asks you to perform a task:
 Always prefer editing existing files over creating new ones when appropriate. Be concise but informative.`;
 };
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function createOpenAIClient(): { client: OpenAI; model: string } {
   const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -35,7 +35,9 @@ function createOpenAIClient(): { client: OpenAI; model: string } {
   if (openaiApiKey) {
     const model = process.env.OPENAI_MODEL;
     if (!model) {
-      throw new Error('OPENAI_MODEL environment variable is required when using OPENAI_API_KEY');
+      throw new Error(
+        'OPENAI_MODEL environment variable is required when using OPENAI_API_KEY'
+      );
     }
 
     const client = new OpenAI({
@@ -48,7 +50,9 @@ function createOpenAIClient(): { client: OpenAI; model: string } {
   if (openrouterApiKey) {
     const model = process.env.OPENROUTER_MODEL;
     if (!model) {
-      throw new Error('OPENROUTER_MODEL environment variable is required when using OPENROUTER_API_KEY');
+      throw new Error(
+        'OPENROUTER_MODEL environment variable is required when using OPENROUTER_API_KEY'
+      );
     }
 
     const client = new OpenAI({
@@ -63,7 +67,9 @@ function createOpenAIClient(): { client: OpenAI; model: string } {
     return { client, model };
   }
 
-  throw new Error('Either OPENAI_API_KEY or OPENROUTER_API_KEY environment variable is required');
+  throw new Error(
+    'Either OPENAI_API_KEY or OPENROUTER_API_KEY environment variable is required'
+  );
 }
 
 export class Agent {
@@ -75,12 +81,19 @@ export class Agent {
   constructor(client?: OpenAI, options?: AgentOptions & { model?: string }) {
     if (client) {
       this.client = client;
-      this.model = options?.model || process.env.OPENAI_MODEL || process.env.OPENROUTER_MODEL || '';
+      this.model =
+        options?.model ||
+        process.env.OPENAI_MODEL ||
+        process.env.OPENROUTER_MODEL ||
+        '';
       if (!this.model) {
-        throw new Error('Model must be provided in options or via OPENAI_MODEL/OPENROUTER_MODEL environment variable');
+        throw new Error(
+          'Model must be provided in options or via OPENAI_MODEL/OPENROUTER_MODEL environment variable'
+        );
       }
     } else {
-      const { client: createdClient, model: createdModel } = createOpenAIClient();
+      const { client: createdClient, model: createdModel } =
+        createOpenAIClient();
       this.client = createdClient;
       this.model = options?.model || createdModel;
     }
@@ -105,17 +118,35 @@ export class Agent {
     toolCall: ToolCallMessage
   ): Promise<{ result: string; error: boolean }> {
     try {
-      const toolInput = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+      const toolInput = JSON.parse(toolCall.function.arguments) as Record<
+        string,
+        unknown
+      >;
       this.options.onToolStart(toolCall.id, toolCall.function.name, toolInput);
       const result = executeTool(toolCall.function.name, toolInput);
       const isError = result.startsWith('Error:');
-      this.options.onToolComplete(toolCall.id, toolCall.function.name, toolInput, result, isError);
+      this.options.onToolComplete(
+        toolCall.id,
+        toolCall.function.name,
+        toolInput,
+        result,
+        isError
+      );
       return { result, error: isError };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       const result = `Error: Tool execution failed: ${errorMessage}`;
-      const toolInput = JSON.parse(toolCall.function.arguments || '{}') as Record<string, unknown>;
-      this.options.onToolComplete(toolCall.id, toolCall.function.name, toolInput, result, true);
+      const toolInput = JSON.parse(
+        toolCall.function.arguments || '{}'
+      ) as Record<string, unknown>;
+      this.options.onToolComplete(
+        toolCall.id,
+        toolCall.function.name,
+        toolInput,
+        result,
+        true
+      );
       return { result, error: true };
     }
   }
@@ -127,13 +158,16 @@ export class Agent {
 
     if (this.options.enableParallelTools && toolCalls.length > 1) {
       const results = await Promise.all(
-        toolCalls.map(toolCall => this.executeToolWithErrorHandling(toolCall))
+        toolCalls.map((toolCall) => this.executeToolWithErrorHandling(toolCall))
       );
 
       for (let i = 0; i < toolCalls.length; i++) {
         const toolCall = toolCalls[i];
         const { result, error } = results[i];
-        const toolInput = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+        const toolInput = JSON.parse(toolCall.function.arguments) as Record<
+          string,
+          unknown
+        >;
         executedToolCalls.push({
           name: toolCall.function.name,
           input: toolInput,
@@ -143,8 +177,12 @@ export class Agent {
       }
     } else {
       for (const toolCall of toolCalls) {
-        const { result, error } = await this.executeToolWithErrorHandling(toolCall);
-        const toolInput = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+        const { result, error } =
+          await this.executeToolWithErrorHandling(toolCall);
+        const toolInput = JSON.parse(toolCall.function.arguments) as Record<
+          string,
+          unknown
+        >;
         executedToolCalls.push({
           name: toolCall.function.name,
           input: toolInput,
@@ -159,13 +197,21 @@ export class Agent {
 
   private async makeApiCallWithRetry() {
     let lastError: Error | null = null;
-    
+
     const openAIMessages: Array<
       | { role: 'user'; content: string }
       | { role: 'assistant'; content: string }
-      | { role: 'assistant'; content: null; tool_calls: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
+      | {
+          role: 'assistant';
+          content: null;
+          tool_calls: Array<{
+            id: string;
+            type: 'function';
+            function: { name: string; arguments: string };
+          }>;
+        }
       | { role: 'tool'; tool_call_id: string; content: string }
-    > = this.conversation.map(msg => {
+    > = this.conversation.map((msg) => {
       if (msg.role === 'tool') {
         return {
           role: 'tool' as const,
@@ -177,7 +223,7 @@ export class Agent {
         return {
           role: 'assistant' as const,
           content: null,
-          tool_calls: msg.content.map(tc => ({
+          tool_calls: msg.content.map((tc) => ({
             id: tc.id,
             type: 'function' as const,
             function: {
@@ -188,11 +234,11 @@ export class Agent {
         };
       }
       return {
-        role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+        role: msg.role === 'user' ? ('user' as const) : ('assistant' as const),
         content: msg.content as string,
       };
     });
-    
+
     for (let attempt = 0; attempt < this.options.maxRetries; attempt++) {
       try {
         const response = await this.client.chat.completions.create({
@@ -206,11 +252,16 @@ export class Agent {
         });
         return response;
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown API error');
-        
+        lastError =
+          error instanceof Error ? error : new Error('Unknown API error');
+
         if (error instanceof Error) {
-          if (error.message.includes('401') || error.message.includes('403') || 
-              error.message.includes('400') || error.message.includes('invalid')) {
+          if (
+            error.message.includes('401') ||
+            error.message.includes('403') ||
+            error.message.includes('400') ||
+            error.message.includes('invalid')
+          ) {
             throw error;
           }
         }
@@ -269,21 +320,24 @@ export class Agent {
         const openAIToolCalls = message.tool_calls || [];
 
         if (openAIToolCalls.length > 0) {
-          const toolCallMessages: ToolCallMessage[] = openAIToolCalls.map(tc => {
-            if (tc.type !== 'function' || !('function' in tc)) {
-              throw new Error('Unexpected tool call type');
+          const toolCallMessages: ToolCallMessage[] = openAIToolCalls.map(
+            (tc) => {
+              if (tc.type !== 'function' || !('function' in tc)) {
+                throw new Error('Unexpected tool call type');
+              }
+              return {
+                id: tc.id,
+                type: 'function',
+                function: {
+                  name: tc.function.name,
+                  arguments: tc.function.arguments,
+                },
+              };
             }
-            return {
-              id: tc.id,
-              type: 'function',
-              function: {
-                name: tc.function.name,
-                arguments: tc.function.arguments,
-              },
-            };
-          });
+          );
 
-          const executedToolCalls = await this.executeToolsParallel(toolCallMessages);
+          const executedToolCalls =
+            await this.executeToolsParallel(toolCallMessages);
           toolCalls.push(...executedToolCalls);
 
           this.conversation.push({
@@ -324,7 +378,8 @@ export class Agent {
         };
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
       return {
         text: `An error occurred: ${errorMessage}`,
         toolCalls,
@@ -334,4 +389,3 @@ export class Agent {
     }
   }
 }
-

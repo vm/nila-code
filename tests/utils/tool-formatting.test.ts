@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'bun:test';
 import { ToolName } from '../../src/shared/types';
-import { countLines, formatToolCallName, formatToolCallTarget, generateUnifiedDiff, getFileName } from '../../src/shared/tool-formatting';
+import {
+  countLines,
+  formatToolCallName,
+  formatToolCallTarget,
+  generateUnifiedDiff,
+  getFileName,
+} from '../../src/shared/tool-formatting';
 
 describe('tool-formatting', () => {
   it('getFileName returns the last path segment, and falls back when path ends with /', () => {
@@ -14,14 +20,22 @@ describe('tool-formatting', () => {
   });
 
   it('formatToolCallTarget formats command, truncates long commands, and formats paths', () => {
-    expect(formatToolCallTarget(ToolName.RUN_COMMAND, { command: 'bun test' })).toBe('bun test');
+    expect(
+      formatToolCallTarget(ToolName.RUN_COMMAND, { command: 'bun test' })
+    ).toBe('bun test');
     const longCommand = 'x'.repeat(100);
-    const formatted = formatToolCallTarget(ToolName.RUN_COMMAND, { command: longCommand });
+    const formatted = formatToolCallTarget(ToolName.RUN_COMMAND, {
+      command: longCommand,
+    });
     expect(formatted).toEndWith('…');
     expect(formatted?.length).toBeLessThanOrEqual(61);
     expect(formatToolCallTarget(ToolName.LIST_FILES, { path: '.' })).toBe('./');
-    expect(formatToolCallTarget(ToolName.READ_FILE, { path: 'src/agent/types.ts' })).toBe('types.ts');
-    expect(formatToolCallTarget('custom', { path: 'src/agent/types.ts' })).toBe('types.ts');
+    expect(
+      formatToolCallTarget(ToolName.READ_FILE, { path: 'src/agent/types.ts' })
+    ).toBe('types.ts');
+    expect(formatToolCallTarget('custom', { path: 'src/agent/types.ts' })).toBe(
+      'types.ts'
+    );
     expect(formatToolCallTarget('custom', {})).toBeNull();
   });
 
@@ -32,7 +46,9 @@ describe('tool-formatting', () => {
   });
 
   it('generateUnifiedDiff renders creation diffs and truncates after 50 lines', () => {
-    const newStr = Array.from({ length: 80 }, (_, i) => `line ${i + 1}`).join('\n');
+    const newStr = Array.from({ length: 80 }, (_, i) => `line ${i + 1}`).join(
+      '\n'
+    );
     const diff = generateUnifiedDiff('', newStr, 'new.ts').join('\n');
     expect(diff).toContain('@@ -0,0 +1,80 @@');
     expect(diff).toContain('+ line 50');
@@ -56,7 +72,11 @@ describe('tool-formatting', () => {
     const newLines = [...oldLines];
     oldLines[49] = 'old change';
     newLines[49] = 'new change';
-    const diff = generateUnifiedDiff(oldLines.join('\n'), newLines.join('\n'), 'file.ts').join('\n');
+    const diff = generateUnifiedDiff(
+      oldLines.join('\n'),
+      newLines.join('\n'),
+      'file.ts'
+    ).join('\n');
     expect(diff).toContain('- old change');
     expect(diff).toContain('+ new change');
     expect(diff).toContain('  line 51');
@@ -69,7 +89,11 @@ describe('tool-formatting', () => {
     newLines[49] = 'new change';
     oldLines[50] = 'old diverge';
     newLines[50] = 'new diverge';
-    const diff = generateUnifiedDiff(oldLines.join('\n'), newLines.join('\n'), 'file.ts').join('\n');
+    const diff = generateUnifiedDiff(
+      oldLines.join('\n'),
+      newLines.join('\n'),
+      'file.ts'
+    ).join('\n');
     expect(diff).toContain('- old change');
     expect(diff).toContain('+ new change');
     expect(diff).not.toContain('  line 51');
@@ -103,9 +127,11 @@ describe('tool-formatting', () => {
       ...Array.from({ length: 40 }, (_, i) => `tail ${i + 1}`),
     ];
 
-    const diff = generateUnifiedDiff(oldLines.join('\n'), newLines.join('\n'), 'big.ts').join('\n');
+    const diff = generateUnifiedDiff(
+      oldLines.join('\n'),
+      newLines.join('\n'),
+      'big.ts'
+    ).join('\n');
     expect(diff).toContain('truncated, showing 50 of');
   });
 });
-
-

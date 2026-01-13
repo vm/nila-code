@@ -25,7 +25,13 @@ describe('splitForToolCalls', () => {
     ];
 
     const toolCalls = [
-      { id: 'tool_1', name: 'list_files', input: { path: '.' }, status: ToolCallStatus.DONE, result: 'src/' },
+      {
+        id: 'tool_1',
+        name: 'list_files',
+        input: { path: '.' },
+        status: ToolCallStatus.DONE,
+        result: 'src/',
+      },
     ];
 
     const partition = splitForToolCalls({
@@ -40,7 +46,14 @@ describe('splitForToolCalls', () => {
   it('does not move messages when tool calls exist and the last message is user', () => {
     const messages = [{ role: MessageRole.USER, content: 'question' }];
 
-    const toolCalls = [{ id: 'tool_1', name: 'list_files', input: { path: '.' }, status: ToolCallStatus.RUNNING }];
+    const toolCalls = [
+      {
+        id: 'tool_1',
+        name: 'list_files',
+        input: { path: '.' },
+        status: ToolCallStatus.RUNNING,
+      },
+    ];
 
     const partition = splitForToolCalls({
       messages,
@@ -51,5 +64,3 @@ describe('splitForToolCalls', () => {
     expect(partition.afterAssistant).toBeNull();
   });
 });
-
-

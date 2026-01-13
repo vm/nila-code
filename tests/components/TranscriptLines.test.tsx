@@ -30,12 +30,7 @@ describe('TranscriptLines', () => {
       <TranscriptLines
         height={2}
         scrollOffset={1}
-        lines={[
-          { text: '1' },
-          { text: '2' },
-          { text: '3' },
-          { text: '4' },
-        ]}
+        lines={[{ text: '1' }, { text: '2' }, { text: '3' }, { text: '4' }]}
       />
     );
 
@@ -45,5 +40,3 @@ describe('TranscriptLines', () => {
     expect(out).not.toContain('4');
   });
 });
-
-

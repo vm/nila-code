@@ -17,7 +17,7 @@ export enum StopReason {
   MAX_TOKENS = 'length',
   END_TURN = 'stop',
   STOP_SEQUENCE = 'stop',
-  TOOL_USE = 'tool_calls'
+  TOOL_USE = 'tool_calls',
 }
 
 export type ToolCall = {
@@ -41,7 +41,16 @@ export type AgentOptions = {
   maxRetries?: number;
   retryDelay?: number;
   enableParallelTools?: boolean;
-  onToolStart?: (id: string, name: string, input: Record<string, unknown>) => void;
-  onToolComplete?: (id: string, name: string, input: Record<string, unknown>, result: string, error?: boolean) => void;
+  onToolStart?: (
+    id: string,
+    name: string,
+    input: Record<string, unknown>
+  ) => void;
+  onToolComplete?: (
+    id: string,
+    name: string,
+    input: Record<string, unknown>,
+    result: string,
+    error?: boolean
+  ) => void;
 };
-

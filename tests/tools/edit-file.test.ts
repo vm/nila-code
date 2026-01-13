@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { editFile } from '../../src/tools/edit-file';
@@ -21,18 +27,18 @@ describe('editFile', () => {
 
     const result = editFile(filePath, '', content);
     expect(result).toContain('Created');
-    
+
     expect(existsSync(filePath)).toBe(true);
     expect(readFileSync(filePath, 'utf-8')).toBe(content);
   });
 
-  it('creates parent directories if they don\'t exist', () => {
+  it("creates parent directories if they don't exist", () => {
     const filePath = join(testDir, 'nested', 'deep', 'file.txt');
     const content = 'Nested file';
 
     const result = editFile(filePath, '', content);
     expect(result).toContain('Created');
-    
+
     expect(existsSync(filePath)).toBe(true);
     expect(readFileSync(filePath, 'utf-8')).toBe(content);
   });
@@ -44,7 +50,7 @@ describe('editFile', () => {
 
     const result = editFile(filePath, 'world', 'universe');
     expect(result).toContain('Updated');
-    
+
     const newContent = readFileSync(filePath, 'utf-8');
     expect(newContent).toBe('Hello, universe!');
   });
@@ -73,14 +79,14 @@ describe('editFile', () => {
 
     const result = editFile(filePath, ', world', '');
     expect(result).toContain('Updated');
-    
+
     const newContent = readFileSync(filePath, 'utf-8');
     expect(newContent).toBe('Hello!');
   });
 
   it('handles file edit errors on non-existent file replacement', () => {
     const nonExistentFile = join(testDir, 'nonexistent.txt');
-    
+
     const result = editFile(nonExistentFile, 'old', 'new');
     expect(result).toContain('Error: File');
     expect(result).toContain('does not exist');
@@ -94,10 +100,9 @@ describe('editFile', () => {
 
   it('handles file creation with special characters in path', () => {
     const specialPath = join(testDir, 'special chars file.txt');
-    
+
     const result = editFile(specialPath, '', 'content');
     expect(result).toContain('Created file');
     expect(readFileSync(specialPath, 'utf-8')).toBe('content');
   });
 });
-

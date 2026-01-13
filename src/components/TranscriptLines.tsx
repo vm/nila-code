@@ -1,7 +1,11 @@
 import { Box, Text } from 'ink';
 import type { TranscriptLine } from '../shared/types';
 
-export function TranscriptLines(props: { lines: TranscriptLine[]; height: number; scrollOffset?: number }) {
+export function TranscriptLines(props: {
+  lines: TranscriptLine[];
+  height: number;
+  scrollOffset?: number;
+}) {
   const height = Math.max(1, props.height);
   const scrollOffset = Math.max(0, props.scrollOffset ?? 0);
 
@@ -24,5 +28,3 @@ export function TranscriptLines(props: { lines: TranscriptLine[]; height: number
     </Box>
   );
 }
-
-

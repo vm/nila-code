@@ -235,6 +235,7 @@ Show code being written character-by-character for edit operations.
 ### What changes
 
 This is the most complex feature. Requires:
+
 - Detecting edit_file tool calls from stream
 - Parsing partial JSON input as it arrives
 - Showing the `new_str` content character by character
@@ -329,32 +330,37 @@ Allow expanding/collapsing verbose tool outputs.
 ## Definition of done
 
 ### Phase 1 (Thinking timer)
+
 - [x] Shows "Thinking for Ns" with live updating time
 - [x] Timer stops when response arrives
 - [x] Works with and without tool calls
 
 ### Phase 2 (Streaming)
+
 - [ ] Text appears incrementally
 - [ ] Tool calls work correctly with streaming
 - [ ] No regression in final response quality
 
 ### Phase 3 (Better diffs)
+
 - [x] Unified diff format with `@@` headers
 - [x] Context lines around changes
 - [x] Proper coloring and borders
 
 ### Phase 4 (Code blocks)
+
 - [x] File contents in bordered blocks
 - [x] Command output in bordered blocks
 - [x] Consistent visual style
 
 ### Phase 5 (Streaming edits)
+
 - [ ] Code appears character by character
 - [ ] Cursor shows insertion point
 - [ ] Smooth transition to final diff
 
 ### Phase 6 (Collapsible)
+
 - [x] Tool outputs collapsible
 - [x] Keyboard navigation works
 - [x] State persists correctly
-

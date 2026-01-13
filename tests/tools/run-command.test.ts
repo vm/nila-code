@@ -26,12 +26,16 @@ describe('runCommand', () => {
   });
 
   it('handles git commit with message containing spaces', () => {
-    const result = runCommand('git commit --dry-run -m "UI improvements and tests"');
+    const result = runCommand(
+      'git commit --dry-run -m "UI improvements and tests"'
+    );
     expect(result).not.toContain('pathspec');
   });
 
   it('handles single quotes in commit messages', () => {
-    const result = runCommand("git commit --dry-run -m 'Add feature with spaces'");
+    const result = runCommand(
+      "git commit --dry-run -m 'Add feature with spaces'"
+    );
     expect(result).not.toContain('pathspec');
   });
 
@@ -65,4 +69,3 @@ describe('runCommand', () => {
     expect(result).toContain('Error');
   });
 });
-

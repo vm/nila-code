@@ -6,7 +6,9 @@ export function useThinkingElapsedSeconds(params: {
   thinkingStartTime?: number | null;
 }): number | null {
   const { isLoading, hasToolCalls, thinkingStartTime } = params;
-  const [thinkingElapsedSeconds, setThinkingElapsedSeconds] = useState<number | null>(null);
+  const [thinkingElapsedSeconds, setThinkingElapsedSeconds] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
     if (!isLoading || hasToolCalls || !thinkingStartTime) {
@@ -26,5 +28,3 @@ export function useThinkingElapsedSeconds(params: {
 
   return thinkingElapsedSeconds;
 }
-
-

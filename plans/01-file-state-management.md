@@ -157,11 +157,13 @@ Also ensure `Agent.clearHistory()` calls `this.options.fileTracker?.clearSession
 ### Injection strategy options
 
 **Option A: Prepend to system prompt** (recommended)
+
 - Cleaner conversation history
 - `agents.md` content appears as part of "background knowledge"
 - Requires tracking which agents.md files have been injected and including them in `getSystemPrompt()`
 
 **Option B: Inject as user message**
+
 - Simpler implementation
 - Can feel noisy in conversation history
 - Content appears as "the user told me this"

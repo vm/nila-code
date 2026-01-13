@@ -19,5 +19,3 @@ export function splitForToolCalls<M extends { role: MessageRole }>(params: {
 
   return { before: messages, afterAssistant: null };
 }
-
-

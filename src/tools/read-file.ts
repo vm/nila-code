@@ -11,4 +11,3 @@ export function readFile(path: string): string {
     return `Error: Failed to read file "${path}"`;
   }
 }
-

@@ -12,7 +12,7 @@ export function listFiles(path: string): string {
 
       const fullPath = `${path}/${entry}`;
       const stats = statSync(fullPath);
-      
+
       if (stats.isDirectory()) {
         items.push(`${entry}/`);
       } else {
@@ -28,4 +28,3 @@ export function listFiles(path: string): string {
     return `Error: Failed to list files in "${path}"`;
   }
 }
-

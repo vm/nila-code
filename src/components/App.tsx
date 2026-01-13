@@ -30,20 +30,32 @@ export function App() {
   const [agent] = useState(() => {
     return new Agent(undefined, {
       onToolStart: (id, name, input) => {
-        setToolCalls(prev => [...prev, { id, name, input, status: ToolCallStatus.RUNNING }]);
+        setToolCalls((prev) => [
+          ...prev,
+          { id, name, input, status: ToolCallStatus.RUNNING },
+        ]);
       },
       onToolComplete: (id, _name, _input, result, error) => {
-        setToolCalls(prev => prev.map(tc => 
-          tc.id === id 
-            ? { ...tc, status: error ? ToolCallStatus.ERROR : ToolCallStatus.DONE, result, error }
-            : tc
-        ));
+        setToolCalls((prev) =>
+          prev.map((tc) =>
+            tc.id === id
+              ? {
+                  ...tc,
+                  status: error ? ToolCallStatus.ERROR : ToolCallStatus.DONE,
+                  result,
+                  error,
+                }
+              : tc
+          )
+        );
       },
     });
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
-  const [thinkingStartTime, setThinkingStartTime] = useState<number | null>(null);
+  const [thinkingStartTime, setThinkingStartTime] = useState<number | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const [terminalHeight, setTerminalHeight] = useState(stdout.rows || 24);
   const [terminalWidth, setTerminalWidth] = useState(stdout.columns || 80);
@@ -52,7 +64,9 @@ export function App() {
   useEffect(() => {
     const handleExit = () => exit();
     process.on('SIGINT', handleExit);
-    return () => { process.off('SIGINT', handleExit); };
+    return () => {
+      process.off('SIGINT', handleExit);
+    };
   }, [exit]);
 
   useEffect(() => {
@@ -62,11 +76,13 @@ export function App() {
     };
     updateSize();
     stdout.on('resize', updateSize);
-    return () => { stdout.off('resize', updateSize); };
+    return () => {
+      stdout.off('resize', updateSize);
+    };
   }, [stdout]);
 
   const handleSubmit = async (text: string) => {
-    setMessages(prev => [...prev, { role: MessageRole.USER, content: text }]);
+    setMessages((prev) => [...prev, { role: MessageRole.USER, content: text }]);
     setScrollOffset(0);
     setIsLoading(true);
     setThinkingStartTime(Date.now());
@@ -75,7 +91,10 @@ export function App() {
 
     try {
       const response = await agent.chat(text);
-      setMessages(prev => [...prev, { role: MessageRole.ASSISTANT, content: response.text }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: MessageRole.ASSISTANT, content: response.text },
+      ]);
       if (response.error) setError(response.error);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -86,7 +105,6 @@ export function App() {
     }
   };
 
-
   const banner = [
     '███╗   ██╗██╗██╗      █████╗      ██████╗ ██████╗ ██████╗ ███████╗',
     '████╗  ██║██║██║     ██╔══██╗    ██╔════╝██╔═══██╗██╔══██╗██╔════╝',
@@ -96,7 +114,14 @@ export function App() {
     '╚═╝  ╚═══╝╚═╝╚══════╝╚═╝  ╚═╝     ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝',
   ];
 
-  const gradientColors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#5f27cd', '#ff9ff3'];
+  const gradientColors = [
+    '#ff6b6b',
+    '#feca57',
+    '#48dbfb',
+    '#1dd1a1',
+    '#5f27cd',
+    '#ff9ff3',
+  ];
 
   const { before, afterAssistant } = splitForToolCalls({
     messages,
@@ -113,22 +138,22 @@ export function App() {
     const page = Math.max(1, transcriptHeight - 1);
 
     if (key.upArrow) {
-      setScrollOffset(prev => prev + 1);
+      setScrollOffset((prev) => prev + 1);
       return;
     }
 
     if (key.downArrow) {
-      setScrollOffset(prev => Math.max(0, prev - 1));
+      setScrollOffset((prev) => Math.max(0, prev - 1));
       return;
     }
 
     if (key.pageUp) {
-      setScrollOffset(prev => prev + page);
+      setScrollOffset((prev) => prev + page);
       return;
     }
 
     if (key.pageDown) {
-      setScrollOffset(prev => Math.max(0, prev - page));
+      setScrollOffset((prev) => Math.max(0, prev - page));
       return;
     }
   });
@@ -136,15 +161,24 @@ export function App() {
   return (
     <Box flexDirection="column" height={terminalHeight}>
       {hasBanner && (
-        <Box flexDirection="column" alignItems="center" justifyContent="center" flexShrink={0}>
+        <Box
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          flexShrink={0}
+        >
           <Box flexDirection="column">
             {banner.map((line, i) => (
-              <Text key={i} color={gradientColors[i]}>{line}</Text>
+              <Text key={i} color={gradientColors[i]}>
+                {line}
+              </Text>
             ))}
           </Box>
-          
+
           <Box marginTop={2}>
-            <Text color="gray" dimColor>{cwd()}</Text>
+            <Text color="gray" dimColor>
+              {cwd()}
+            </Text>
           </Box>
         </Box>
       )}
@@ -154,7 +188,7 @@ export function App() {
           <TranscriptView
             messages={before}
             afterAssistant={afterAssistant}
-            toolCalls={toolCalls.map(tc => ({
+            toolCalls={toolCalls.map((tc) => ({
               name: tc.name,
               input: tc.input,
               status: tc.status,

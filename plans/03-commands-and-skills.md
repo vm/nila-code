@@ -57,8 +57,8 @@ Search in this order (first match wins):
 
 1. **Project commands**: `<workingDir>/.code/commands/<name>.md`
 2. **Project skills**: `<workingDir>/.code/skills/<name>/SKILL.md`
-3. **Personal commands**: `~/.code/commands/<name>.md` *(Phase 2)*
-4. **Personal skills**: `~/.code/skills/<name>/SKILL.md` *(Phase 2)*
+3. **Personal commands**: `~/.code/commands/<name>.md` _(Phase 2)_
+4. **Personal skills**: `~/.code/skills/<name>/SKILL.md` _(Phase 2)_
 
 **Conflict resolution**: if both `.code/commands/review.md` and `.code/skills/review/SKILL.md` exist, the command wins. This matches the search order.
 
@@ -154,8 +154,8 @@ User input and expected behavior:
 ### Listing
 
 - [ ] `listCommands(dir)` returns all available command names and skill names, de-duped
-- [ ] project commands/skills appear before personal ones *(Phase 2)*
-- [ ] duplicate names (project overriding personal) only appear once *(Phase 2)*
+- [ ] project commands/skills appear before personal ones _(Phase 2)_
+- [ ] duplicate names (project overriding personal) only appear once _(Phase 2)_
 
 ### Expansion
 
@@ -181,7 +181,7 @@ User input and expected behavior:
   - expand `/qr-code`
   - assert prompt contains `make_qr.py`
   - assert prompt does not include the contents of `make_qr.py`
-- [ ] **project overrides personal** *(Phase 2)*:
+- [ ] **project overrides personal** _(Phase 2)_:
   - create both project `.code/commands/foo.md` and personal `~/.code/commands/foo.md`
   - expand `/foo`
   - assert the project version content is used
@@ -270,9 +270,9 @@ Keep these consistent so tests can assert on them:
 ### Built-in `/help`
 
 - [ ] prints available commands/skills from project
-- [ ] prints available commands/skills including personal *(Phase 2)*
-- [ ] shows command source (project vs user) for clarity *(Phase 2)*
-- [ ] optionally supports `/help <query>` later *(Phase 3+)*
+- [ ] prints available commands/skills including personal _(Phase 2)_
+- [ ] shows command source (project vs user) for clarity _(Phase 2)_
+- [ ] optionally supports `/help <query>` later _(Phase 3+)_
 
 ---
 
@@ -291,11 +291,13 @@ Keep these consistent so tests can assert on them:
 ## Definition of done
 
 ### Phase 1 (project-level)
+
 - [ ] `/help` works end-to-end in the UI
 - [ ] Unknown commands error locally (no agent call)
 - [ ] Known commands/skills expand into an agent prompt consistently
 - [ ] Skills never execute code; they only surface text and file names
 
 ### Phase 2 (personal)
+
 - [ ] Project commands/skills take precedence over personal ones
 - [ ] Personal directory `~/.code/` works across platforms

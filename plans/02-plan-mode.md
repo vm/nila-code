@@ -38,11 +38,13 @@ Minimum allowed tools:
 ### Why block `run_command` entirely
 
 Prompt-only safety ("please only run read-only commands") is insufficient:
+
 - The model can be jailbroken or confused into running destructive commands
 - Allowlist enforcement is complex (need to parse shell syntax, handle pipes, etc.)
 - The safest approach is to remove the capability entirely in plan mode
 
 If you need command output in plan mode (e.g., `git status`), consider:
+
 - Pre-running specific commands and injecting results into the system prompt
 - Adding a separate `git_status` read-only tool
 - Running plan mode with explicit user approval for each command (future feature)
@@ -75,11 +77,13 @@ This matches the existing architecture: Agent config is passed through the const
 **Why plan mode is safe**: Plan mode is safe when the system prompt and tool list are kept consistent for the duration of a conversation, and mode switches clear conversation history.
 
 **Implementation approach**:
+
 - Store the system prompt in `this.options.systemPrompt` (computed once in constructor or via helper)
 - Use the same system prompt for all API calls in a conversation
 - When switching between plan/normal, clear history and construct a new agent for the new mode
 
 **Future consideration**:
+
 - Preserve a copy of the last plan text so the user can reference it after switching modes without keeping full conversation history
 
 ## Where to start in this repo
@@ -104,7 +108,7 @@ This matches the existing architecture: Agent config is passed through the const
 - [ ] **Plan prompt differs**: plan mode uses a plan-specific system prompt that makes "no edits" explicit
 - [ ] **Includes working directory**: prompt includes the current working directory path for grounding
 - [ ] **Custom prompt override**: when `systemPrompt` is provided in options, it overrides the default
- 
+
 ### Interactive UI behavior
 
 - [ ] **Enter plan mode**: typing `/plan` switches the app into plan mode
@@ -242,16 +246,19 @@ Risks:
 - Extend `AgentOptions` with `mode?: AgentMode`, `systemPrompt?: string`, `toolFilter?: (name: string) => boolean`
 
 Acceptance criteria:
+
 - Existing code compiles with new fields omitted (defaults to normal behavior)
 
 ### Step 2: Make `Agent` use custom system prompt (`src/agent/agent.ts`)
 
 Implementation:
+
 - In constructor, add `systemPrompt: options?.systemPrompt` to `this.options` (default to `undefined`)
 - Add private method `getSystemPrompt(): string` that returns `this.options.systemPrompt ?? getSystemPrompt()` (the module-level helper)
 - In `makeApiCallWithRetry`, change line 118 to: `system: this.getSystemPrompt()` (ensures consistent prompt across all API calls in a conversation)
 
 Acceptance criteria:
+
 - When `systemPrompt` is provided, the API call uses it consistently across all calls
 - When `systemPrompt` is omitted, behavior is unchanged
 - The same system prompt is used for all API calls in a single conversation (no mid-conversation changes)
@@ -266,6 +273,7 @@ In `src/agent/agent.ts`:
 - In `makeApiCallWithRetry`, change line 119 to: `tools: this.getFilteredTools()`
 
 Acceptance criteria:
+
 - When `toolFilter` excludes `edit_file`, the API call's tools array does not contain it
 - When `toolFilter` is omitted, all tools are included
 
@@ -278,9 +286,11 @@ Acceptance criteria:
 ### Step 5: Update tests
 
 #### `tests/agent/agent.test.ts`
+
 - Add test that constructs `new Agent(mockClient, { toolFilter: (n) => n !== 'edit_file' })`
 - Assert `mockCreate.mock.calls[0][0].tools` does not include `edit_file`
 - Add test that sets `systemPrompt` and asserts the API call uses it
 
 #### `tests/components/*`
+
 - Add tests for `/plan` and `/normal` command handling and mode indicator

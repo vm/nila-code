@@ -30,7 +30,7 @@ describe('executeTool (dispatcher)', () => {
     const result = executeTool('edit_file', {
       path: filePath,
       old_str: 'old',
-      new_str: 'new'
+      new_str: 'new',
     });
     expect(result).toContain('Updated');
   });
@@ -53,4 +53,3 @@ describe('executeTool (dispatcher)', () => {
     expect(result).toContain('unknown_tool');
   });
 });
-

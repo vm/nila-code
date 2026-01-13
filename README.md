@@ -20,18 +20,19 @@ Built with **React + Ink** for the UI and the **OpenAI SDK** for model calls (su
 
 The agent chats in the terminal and can invoke a small set of tools to operate on your machine:
 
-| Capability | Notes |
-|---|---|
-| **Read files** | Reads exact file paths |
-| **Edit files** | Replaces a specific string once, or creates a file |
-| **List directory contents** | Non-recursive, hides dotfiles |
-| **Run commands** | Executes a program with args (no shell features like pipes/redirects) |
+| Capability                  | Notes                                                                 |
+| --------------------------- | --------------------------------------------------------------------- |
+| **Read files**              | Reads exact file paths                                                |
+| **Edit files**              | Replaces a specific string once, or creates a file                    |
+| **List directory contents** | Non-recursive, hides dotfiles                                         |
+| **Run commands**            | Executes a program with args (no shell features like pipes/redirects) |
 
 **Just ask naturally:**
-- *"Show me src/tools/index.ts"*
-- *"Update README.md to include a tool reference section"*
-- *"List files in src/tools"*
-- *"Run bun test"*
+
+- _"Show me src/tools/index.ts"_
+- _"Update README.md to include a tool reference section"_
+- _"List files in src/tools"_
+- _"Run bun test"_
 
 ---
 
@@ -51,6 +52,7 @@ bun install
 ```
 
 **Option 1: Direct OpenAI**
+
 ```bash
 echo "OPENAI_API_KEY=your-key-here" > .env
 echo "OPENAI_MODEL=gpt-4o" >> .env
@@ -58,6 +60,7 @@ bun run start
 ```
 
 **Option 2: OpenRouter (supports OpenAI, Anthropic, and other models)**
+
 ```bash
 echo "OPENROUTER_API_KEY=your-key-here" > .env
 echo "OPENROUTER_MODEL=openai/gpt-4o" >> .env
@@ -117,13 +120,13 @@ bun run typecheck
 
 ### Scripts
 
-| Command | Description |
-|---|---|
-| `bun run start` | Start the Ink UI app |
-| `bun test` | Run tests |
-| `bun run test:watch` | Watch tests |
-| `bun run test:coverage` | Coverage |
-| `bun run typecheck` | TypeScript check |
+| Command                 | Description          |
+| ----------------------- | -------------------- |
+| `bun run start`         | Start the Ink UI app |
+| `bun test`              | Run tests            |
+| `bun run test:watch`    | Watch tests          |
+| `bun run test:coverage` | Coverage             |
+| `bun run typecheck`     | TypeScript check     |
 
 ---
 
@@ -196,10 +199,12 @@ The agent will automatically detect which provider to use based on which API key
 ## Troubleshooting
 
 **"API key not found"**
+
 - Ensure your `.env` file contains either `OPENAI_API_KEY` and `OPENAI_MODEL`, or `OPENROUTER_API_KEY` and `OPENROUTER_MODEL`
 - Ensure you are starting the agent from the directory containing `.env`, or export the variables in your shell
 
 **"Command not found: bun"**
+
 - Install Bun from [bun.sh](https://bun.sh)
 - Restart your terminal after installation
 

@@ -11,7 +11,10 @@ function parseCommand(command: string): string[] {
     const char = command[i];
     const nextChar = command[i + 1];
 
-    if (char === '\\' && (inSingleQuote || inDoubleQuote || nextChar === '"' || nextChar === "'")) {
+    if (
+      char === '\\' &&
+      (inSingleQuote || inDoubleQuote || nextChar === '"' || nextChar === "'")
+    ) {
       if (nextChar) {
         current += nextChar;
         i += 2;
@@ -54,7 +57,7 @@ function parseCommand(command: string): string[] {
 export function runCommand(command: string): string {
   try {
     const parts = parseCommand(command.trim());
-    
+
     if (parts.length === 0) {
       return 'Error: Empty command';
     }
@@ -84,4 +87,3 @@ export function runCommand(command: string): string {
     return `Error: Failed to run command "${command}"`;
   }
 }
-

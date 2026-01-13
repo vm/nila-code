@@ -16,7 +16,11 @@ export type InputKey = {
   meta: boolean;
 };
 
-export function applyInputEvent(prevValue: string, input: string, key: InputKey): { nextValue: string; submitted: string | null } {
+export function applyInputEvent(
+  prevValue: string,
+  input: string,
+  key: InputKey
+): { nextValue: string; submitted: string | null } {
   if (key.return) {
     const trimmed = prevValue.trim();
     if (trimmed) return { nextValue: '', submitted: trimmed };
@@ -41,7 +45,7 @@ export function Input({ onSubmit, disabled = false }: Props) {
     if (disabled) return;
 
     let submitted: string | null = null;
-    setValue(prev => {
+    setValue((prev) => {
       const result = applyInputEvent(prev, input, key);
       submitted = result.submitted;
       return result.nextValue;
@@ -52,19 +56,25 @@ export function Input({ onSubmit, disabled = false }: Props) {
   if (disabled) {
     return (
       <Box>
-        <Text color="yellow"><Spinner type="dots" /></Text>
+        <Text color="yellow">
+          <Spinner type="dots" />
+        </Text>
       </Box>
     );
   }
 
   return (
     <Box>
-      <Text color="cyan" bold>›</Text>
+      <Text color="cyan" bold>
+        ›
+      </Text>
       <Text> </Text>
       {value.length > 0 ? (
         <Text color="white">{value}</Text>
       ) : (
-        <Text color="gray" dimColor>ask anything...</Text>
+        <Text color="gray" dimColor>
+          ask anything...
+        </Text>
       )}
       <Text color="cyan">▎</Text>
     </Box>

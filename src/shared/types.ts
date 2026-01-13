@@ -27,5 +27,3 @@ export type TranscriptLine = {
   color?: string;
   dimColor?: boolean;
 };
-
-

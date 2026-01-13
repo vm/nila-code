@@ -22,7 +22,10 @@ export function formatToolCallName(name: string): string {
   }
 }
 
-export function formatToolCallTarget(name: string, input?: Record<string, unknown>): string | null {
+export function formatToolCallTarget(
+  name: string,
+  input?: Record<string, unknown>
+): string | null {
   const safeInput = input ?? {};
   const path = safeInput.path ? String(safeInput.path) : null;
   const command = safeInput.command ? String(safeInput.command) : null;
@@ -79,7 +82,10 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffHunk[] {
     const newLine = i < newLines.length ? newLines[i] : null;
 
     if (oldLine === newLine) {
-      if (hasChanges && diffLines.filter(l => l.type !== 'context').length > 0) {
+      if (
+        hasChanges &&
+        diffLines.filter((l) => l.type !== 'context').length > 0
+      ) {
         diffLines.push({ type: 'context', content: oldLine || '' });
         oldCount++;
         newCount++;
@@ -90,7 +96,11 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffHunk[] {
         newStart = Math.max(1, i + 1 - CONTEXT_LINES);
         const contextStart = Math.max(0, i - CONTEXT_LINES);
         for (let j = contextStart; j < i; j++) {
-          if (j < oldLines.length && j < newLines.length && oldLines[j] === newLines[j]) {
+          if (
+            j < oldLines.length &&
+            j < newLines.length &&
+            oldLines[j] === newLines[j]
+          ) {
             diffLines.push({ type: 'context', content: oldLines[j] });
             oldCount++;
             newCount++;
@@ -112,8 +122,16 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffHunk[] {
 
   if (diffLines.length > 0 && hasChanges) {
     const contextEnd = Math.min(maxShow + CONTEXT_LINES, maxLen);
-    for (let i = maxShow; i < contextEnd && diffLines.length < MAX_DIFF_LINES; i++) {
-      if (i < oldLines.length && i < newLines.length && oldLines[i] === newLines[i]) {
+    for (
+      let i = maxShow;
+      i < contextEnd && diffLines.length < MAX_DIFF_LINES;
+      i++
+    ) {
+      if (
+        i < oldLines.length &&
+        i < newLines.length &&
+        oldLines[i] === newLines[i]
+      ) {
         diffLines.push({ type: 'context', content: oldLines[i] });
         oldCount++;
         newCount++;
@@ -141,8 +159,10 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffHunk[] {
       if (oldLine === newLine && oldLine !== null) {
         fallbackLines.push({ type: 'context', content: oldLine });
       } else {
-        if (oldLine !== null) fallbackLines.push({ type: 'deletion', content: oldLine });
-        if (newLine !== null) fallbackLines.push({ type: 'addition', content: newLine });
+        if (oldLine !== null)
+          fallbackLines.push({ type: 'deletion', content: oldLine });
+        if (newLine !== null)
+          fallbackLines.push({ type: 'addition', content: newLine });
       }
     }
     hunks.push({
@@ -157,7 +177,11 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffHunk[] {
   return hunks;
 }
 
-export function generateUnifiedDiff(oldStr: string, newStr: string, filename: string): string[] {
+export function generateUnifiedDiff(
+  oldStr: string,
+  newStr: string,
+  filename: string
+): string[] {
   const lines: string[] = [];
   const headerWidth = 60;
   const headerLine = `── edit file: ${filename} ${'─'.repeat(Math.max(0, headerWidth - filename.length - 13))}`;
@@ -171,7 +195,9 @@ export function generateUnifiedDiff(oldStr: string, newStr: string, filename: st
       lines.push(`+ ${newLines[i]}`);
     }
     if (newLines.length > maxShow) {
-      lines.push(`... (truncated, showing ${maxShow} of ${newLines.length} lines)`);
+      lines.push(
+        `... (truncated, showing ${maxShow} of ${newLines.length} lines)`
+      );
     }
     lines.push('─'.repeat(headerWidth));
     return lines;
@@ -189,14 +215,17 @@ export function generateUnifiedDiff(oldStr: string, newStr: string, filename: st
       wasTruncated = true;
       break;
     }
-    lines.push(`@@ -${hunk.oldStart},${hunk.oldCount} +${hunk.newStart},${hunk.newCount} @@`);
+    lines.push(
+      `@@ -${hunk.oldStart},${hunk.oldCount} +${hunk.newStart},${hunk.newCount} @@`
+    );
     for (const diffLine of hunk.lines) {
       if (totalDisplayed >= MAX_DISPLAY_LINES) {
         wasTruncated = true;
         break;
       }
       if (diffLine.type === 'context') lines.push(`  ${diffLine.content}`);
-      else if (diffLine.type === 'deletion') lines.push(`- ${diffLine.content}`);
+      else if (diffLine.type === 'deletion')
+        lines.push(`- ${diffLine.content}`);
       else lines.push(`+ ${diffLine.content}`);
       totalDisplayed++;
     }
@@ -206,11 +235,10 @@ export function generateUnifiedDiff(oldStr: string, newStr: string, filename: st
   const totalLines = Math.max(oldLines.length, newLines.length);
   if (wasTruncated || totalDisplayed < totalLines) {
     const shown = Math.min(totalDisplayed, MAX_DISPLAY_LINES);
-    if (shown < totalLines) lines.push(`... (truncated, showing ${shown} of ${totalLines} lines)`);
+    if (shown < totalLines)
+      lines.push(`... (truncated, showing ${shown} of ${totalLines} lines)`);
   }
 
   lines.push('─'.repeat(headerWidth));
   return lines;
 }
-
-

@@ -8,7 +8,7 @@ export function editFile(path: string, oldStr: string, newStr: string): string {
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
       }
-      
+
       writeFileSync(path, newStr, 'utf-8');
       return `Created file "${path}"`;
     }
@@ -18,7 +18,7 @@ export function editFile(path: string, oldStr: string, newStr: string): string {
     }
 
     const content = readFileSync(path, 'utf-8');
-    
+
     const matches = content.match(new RegExp(escapeRegex(oldStr), 'g'));
     if (matches && matches.length > 1) {
       return `Error: The string to replace appears ${matches.length} times. Please be more specific.`;
@@ -30,7 +30,7 @@ export function editFile(path: string, oldStr: string, newStr: string): string {
 
     const newContent = content.replace(oldStr, newStr);
     writeFileSync(path, newContent, 'utf-8');
-    
+
     return `Updated file "${path}"`;
   } catch (error) {
     if (error instanceof Error) {
@@ -43,4 +43,3 @@ export function editFile(path: string, oldStr: string, newStr: string): string {
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-

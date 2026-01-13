@@ -26,7 +26,8 @@ export const tools = [
     type: 'function' as const,
     function: {
       name: ToolName.EDIT_FILE,
-      description: 'Edit a file by replacing a string with another string, or create a new file if old_str is empty',
+      description:
+        'Edit a file by replacing a string with another string, or create a new file if old_str is empty',
       parameters: {
         type: 'object' as const,
         properties: {
@@ -36,7 +37,8 @@ export const tools = [
           },
           old_str: {
             type: 'string',
-            description: 'The string to replace. If empty, creates a new file with new_str as content',
+            description:
+              'The string to replace. If empty, creates a new file with new_str as content',
           },
           new_str: {
             type: 'string',
@@ -107,4 +109,3 @@ export function executeTool(name: string, input: unknown): string {
       return `Error: Unknown tool "${name}"`;
   }
 }
-
