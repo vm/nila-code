@@ -1,23 +1,23 @@
-import type Anthropic from '@anthropic-ai/sdk';
+export type Message = {
+  role: 'user' | 'assistant' | 'tool';
+  content: string | ToolCallMessage[];
+  tool_call_id?: string;
+};
 
-export type MessageParam = Anthropic.MessageParam;
-export type ContentBlock = Anthropic.ContentBlock;
-export type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
-
-export enum ContentBlockType {
-  TEXT = 'text',
-  TOOL_USE = 'tool_use'
-}
+export type ToolCallMessage = {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+};
 
 export enum StopReason {
-  MAX_TOKENS = 'max_tokens',
-  END_TURN = 'end_turn',
-  STOP_SEQUENCE = 'stop_sequence',
-  TOOL_USE = 'tool_use'
-}
-
-export enum ModelName {
-  CLAUDE_SONNET_4 = 'claude-sonnet-4-20250514'
+  MAX_TOKENS = 'length',
+  END_TURN = 'stop',
+  STOP_SEQUENCE = 'stop',
+  TOOL_USE = 'tool_calls'
 }
 
 export type ToolCall = {
