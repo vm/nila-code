@@ -16,7 +16,6 @@ export type ToolCallMessage = {
 export enum StopReason {
   MAX_TOKENS = 'length',
   END_TURN = 'stop',
-  STOP_SEQUENCE = 'stop',
   TOOL_USE = 'tool_calls',
 }
 
