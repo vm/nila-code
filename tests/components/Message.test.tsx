@@ -1,45 +1,90 @@
 import { describe, it, expect } from 'bun:test';
-
-type MessageRole = 'user' | 'assistant';
-
-function formatMessage(role: MessageRole, content: string): string {
-  return `${role === 'user' ? 'You' : 'Claude'}: ${content}`;
-}
+import { render } from 'ink-testing-library';
+import { Message } from '../../src/components/Message';
+import { MessageRole } from '../../src/agent/types';
 
 describe('Message', () => {
-  it('should accept user role and content', () => {
-    const role: MessageRole = 'user';
-    const content = 'Hello, world!';
-    
-    expect(role).toBe('user');
-    expect(content).toBe('Hello, world!');
+  describe('user messages', () => {
+    it('displays "you" label for user messages', () => {
+      const { lastFrame } = render(
+        <Message role={MessageRole.USER} content="Hello, world!" />
+      );
+      
+      expect(lastFrame()).toContain('you');
+      expect(lastFrame()).toContain('Hello, world!');
+    });
+
+    it('displays message content inline with label', () => {
+      const { lastFrame } = render(
+        <Message role={MessageRole.USER} content="Test message" />
+      );
+      
+      expect(lastFrame()).toContain('you');
+      expect(lastFrame()).toContain('Test message');
+    });
   });
 
-  it('should accept assistant role and content', () => {
-    const role: MessageRole = 'assistant';
-    const content = 'Hi there!';
-    
-    expect(role).toBe('assistant');
-    expect(content).toBe('Hi there!');
+  describe('assistant messages', () => {
+    it('displays plain text content', () => {
+      const { lastFrame } = render(
+        <Message role={MessageRole.ASSISTANT} content="Hi there!" />
+      );
+      
+      expect(lastFrame()).toContain('Hi there!');
+    });
+
+    it('renders inline code with backticks', () => {
+      const { lastFrame } = render(
+        <Message role={MessageRole.ASSISTANT} content="Use the `console.log` function" />
+      );
+      
+      expect(lastFrame()).toContain('console.log');
+      expect(lastFrame()).toContain('Use the');
+      expect(lastFrame()).toContain('function');
+    });
+
+    it('renders code blocks', () => {
+      const content = `Here's some code:
+
+\`\`\`typescript
+const x = 1;
+\`\`\``;
+      
+      const { lastFrame } = render(
+        <Message role={MessageRole.ASSISTANT} content={content} />
+      );
+      
+      expect(lastFrame()).toContain('const x = 1;');
+      expect(lastFrame()).toContain('typescript');
+    });
   });
 
-  it('should handle empty content', () => {
-    const content = '';
-    expect(content.length).toBe(0);
-  });
+  describe('edge cases', () => {
+    it('handles empty content', () => {
+      const { lastFrame } = render(
+        <Message role={MessageRole.USER} content="" />
+      );
+      
+      expect(lastFrame()).toContain('you');
+    });
 
-  it('should handle long content', () => {
-    const longContent = 'A'.repeat(1000);
-    expect(longContent.length).toBe(1000);
-  });
+    it('handles multiline content', () => {
+      const { lastFrame } = render(
+        <Message role={MessageRole.ASSISTANT} content="Line 1\nLine 2\nLine 3" />
+      );
+      
+      expect(lastFrame()).toContain('Line 1');
+      expect(lastFrame()).toContain('Line 2');
+      expect(lastFrame()).toContain('Line 3');
+    });
 
-  it('should format user messages correctly', () => {
-    const formatted = formatMessage('user', 'Hello');
-    expect(formatted).toBe('You: Hello');
-  });
-
-  it('should format assistant messages correctly', () => {
-    const formatted = formatMessage('assistant', 'Hi there!');
-    expect(formatted).toBe('Claude: Hi there!');
+    it('handles special characters', () => {
+      const { lastFrame } = render(
+        <Message role={MessageRole.USER} content="Hello <world> & 'friends'" />
+      );
+      
+      expect(lastFrame()).toContain("<world>");
+      expect(lastFrame()).toContain("& 'friends'");
+    });
   });
 });

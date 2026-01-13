@@ -1,96 +1,173 @@
 import { describe, it, expect } from 'bun:test';
+import { render } from 'ink-testing-library';
+import { ToolCall } from '../../src/components/ToolCall';
+import { ToolCallStatus, ToolName } from '../../src/agent/types';
 
 describe('ToolCall', () => {
-  it('should accept name and status props', () => {
-    const name = 'read_file';
-    const status: 'running' | 'done' | 'error' = 'running';
-    
-    expect(name).toBe('read_file');
-    expect(status).toBe('running');
+  describe('rendering with file paths', () => {
+    it('shows filename for read_file', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.READ_FILE}
+          input={{ path: 'src/agent/types.ts' }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('read file');
+      expect(lastFrame()).toContain('types.ts');
+    });
+
+    it('shows filename for edit_file', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.EDIT_FILE}
+          input={{ path: 'src/components/App.tsx', old_str: 'old', new_str: 'new' }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('edit file');
+      expect(lastFrame()).toContain('App.tsx');
+    });
+
+    it('shows directory path for list_files', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.LIST_FILES}
+          input={{ path: 'src/tools' }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('list files');
+      expect(lastFrame()).toContain('src/tools');
+    });
+
+    it('shows ./ for list_files with current directory', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.LIST_FILES}
+          input={{ path: '.' }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('list files');
+      expect(lastFrame()).toContain('./');
+    });
+
+    it('shows command for run_command', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.RUN_COMMAND}
+          input={{ command: 'ls -la' }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('run');
+      expect(lastFrame()).toContain('ls -la');
+    });
+
+    it('truncates long commands', () => {
+      const longCommand = 'git commit -m "This is a very long commit message that should be truncated because it exceeds forty characters"';
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.RUN_COMMAND}
+          input={{ command: longCommand }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('run');
+      expect(lastFrame()).toContain('…');
+      expect(lastFrame()).not.toContain('truncated');
+    });
   });
 
-  it('should handle running status', () => {
-    const status = 'running';
-    const name = 'read_file';
-    const displayText = `Executing ${name}...`;
-    
-    expect(displayText).toBe('Executing read_file...');
+  describe('status indicators', () => {
+    it('shows green checkmark for done status', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.READ_FILE}
+          input={{ path: 'test.ts' }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('✓');
+    });
+
+    it('shows red X for error status', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.READ_FILE}
+          input={{ path: 'test.ts' }}
+          status={ToolCallStatus.ERROR}
+          result="File not found"
+        />
+      );
+      
+      expect(lastFrame()).toContain('✗');
+      expect(lastFrame()).toContain('File not found');
+    });
   });
 
-  it('should handle done status with result', () => {
-    const status = 'done';
-    const name = 'read_file';
-    const result = 'File contents: Hello';
-    const displayText = `✓ ${name}: ${result.substring(0, 80)}...`;
-    
-    expect(displayText).toContain('✓ read_file');
-    expect(displayText).toContain('File contents: Hello');
+  describe('edit file diff info', () => {
+    it('shows line counts for edits', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.EDIT_FILE}
+          input={{ 
+            path: 'src/test.ts',
+            old_str: 'line1\nline2\nline3',
+            new_str: 'newline1\nnewline2\nnewline3\nnewline4\nnewline5'
+          }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('+5');
+      expect(lastFrame()).toContain('-3');
+    });
+
+    it('does not show diff info for read_file', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.READ_FILE}
+          input={{ path: 'src/test.ts' }}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).not.toContain('+');
+      expect(lastFrame()).not.toContain('-');
+    });
   });
 
-  it('should handle done status without result', () => {
-    const status = 'done';
-    const name = 'read_file';
-    const displayText = `✓ ${name}`;
-    
-    expect(displayText).toBe('✓ read_file');
-  });
+  describe('handles missing input gracefully', () => {
+    it('renders without input', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.READ_FILE}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('read file');
+    });
 
-  it('should handle error status', () => {
-    const status = 'error';
-    const name = 'read_file';
-    const result = 'File not found';
-    const displayText = `✗ ${name} failed: ${result.substring(0, 100)}`;
-    
-    expect(displayText).toContain('✗ read_file failed');
-    expect(displayText).toContain('File not found');
-  });
-
-  it('should truncate long results in done status', () => {
-    const longResult = 'A'.repeat(200);
-    const truncated = longResult.substring(0, 80);
-    
-    expect(truncated.length).toBe(80);
-    expect(truncated).toBe('A'.repeat(80));
-  });
-
-  it('should truncate long results in error status', () => {
-    const longResult = 'A'.repeat(200);
-    const truncated = longResult.substring(0, 100);
-    
-    expect(truncated.length).toBe(100);
-    expect(truncated).toBe('A'.repeat(100));
-  });
-
-  it('should handle count prop for grouped tool calls', () => {
-    const name = 'edit_file';
-    const count = 5;
-    const displayText = `✓ ${name} (${count}×)`;
-    
-    expect(displayText).toBe('✓ edit_file (5×)');
-  });
-
-  it('should not show count when count is 1', () => {
-    const name = 'read_file';
-    const count = 1;
-    const displayText = count > 1 ? `✓ ${name} (${count}×)` : `✓ ${name}`;
-    
-    expect(displayText).toBe('✓ read_file');
-  });
-
-  it('should show count for running status when count > 1', () => {
-    const name = 'edit_file';
-    const count = 3;
-    const displayText = `Executing ${name}${count > 1 ? ` (${count})` : ''}...`;
-    
-    expect(displayText).toBe('Executing edit_file (3)...');
-  });
-
-  it('should show count for error status when count > 1', () => {
-    const name = 'read_file';
-    const count = 2;
-    const displayText = `✗ ${name}${count > 1 ? ` (${count}×)` : ''} failed`;
-    
-    expect(displayText).toBe('✗ read_file (2×) failed');
+    it('renders with empty input', () => {
+      const { lastFrame } = render(
+        <ToolCall
+          name={ToolName.LIST_FILES}
+          input={{}}
+          status={ToolCallStatus.DONE}
+        />
+      );
+      
+      expect(lastFrame()).toContain('list files');
+    });
   });
 });
-

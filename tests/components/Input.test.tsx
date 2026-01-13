@@ -1,30 +1,70 @@
-import { describe, it, expect, mock } from 'bun:test';
+import { describe, it, expect } from 'bun:test';
+import { render } from 'ink-testing-library';
+import { Input } from '../../src/components/Input';
 
 describe('Input', () => {
-  it('should accept onSubmit callback', () => {
-    const mockOnSubmit = mock();
-    expect(typeof mockOnSubmit).toBe('function');
+  describe('enabled state', () => {
+    it('shows prompt indicator', () => {
+      const { lastFrame } = render(
+        <Input onSubmit={() => {}} />
+      );
+      
+      expect(lastFrame()).toContain('›');
+    });
+
+    it('shows placeholder when empty', () => {
+      const { lastFrame } = render(
+        <Input onSubmit={() => {}} />
+      );
+      
+      expect(lastFrame()).toContain('ask anything...');
+    });
+
+    it('shows cursor indicator', () => {
+      const { lastFrame } = render(
+        <Input onSubmit={() => {}} />
+      );
+      
+      expect(lastFrame()).toContain('▎');
+    });
   });
 
-  it('should accept disabled prop', () => {
-    const disabled = true;
-    expect(typeof disabled).toBe('boolean');
+  describe('disabled state', () => {
+    it('hides prompt when disabled', () => {
+      const { lastFrame } = render(
+        <Input onSubmit={() => {}} disabled={true} />
+      );
+      
+      expect(lastFrame()).not.toContain('›');
+      expect(lastFrame()).not.toContain('ask anything...');
+    });
+
+    it('hides cursor when disabled', () => {
+      const { lastFrame } = render(
+        <Input onSubmit={() => {}} disabled={true} />
+      );
+      
+      expect(lastFrame()).not.toContain('▎');
+    });
   });
 
-  it('should handle text input', () => {
-    const text = 'hello';
-    expect(text.length).toBeGreaterThan(0);
-  });
+  describe('input logic', () => {
+    it('trim function removes whitespace', () => {
+      const text = '  hello world  ';
+      const trimmed = text.trim();
+      expect(trimmed).toBe('hello world');
+    });
 
-  it('should trim text before submitting', () => {
-    const text = '  hello  ';
-    const trimmed = text.trim();
-    expect(trimmed).toBe('hello');
-  });
+    it('empty string after trim is falsy', () => {
+      const text = '   ';
+      const trimmed = text.trim();
+      expect(trimmed).toBeFalsy();
+    });
 
-  it('should not submit empty text', () => {
-    const emptyText = '   ';
-    const trimmed = emptyText.trim();
-    expect(trimmed.length).toBe(0);
+    it('non-empty string after trim is truthy', () => {
+      const text = '  test  ';
+      const trimmed = text.trim();
+      expect(trimmed).toBeTruthy();
+    });
   });
 });

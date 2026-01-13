@@ -21,8 +21,7 @@ function countLines(str: string): number {
 
 export function ToolCall({ name, input, status, result }: Props) {
   const safeInput = input || {};
-  const filePath = safeInput.file_path ? String(safeInput.file_path) : null;
-  const directory = safeInput.directory ? String(safeInput.directory) : null;
+  const path = safeInput.path ? String(safeInput.path) : null;
   const command = safeInput.command ? String(safeInput.command) : null;
   const oldStr = safeInput.old_str as string | undefined;
   const newStr = safeInput.new_str as string | undefined;
@@ -51,8 +50,12 @@ export function ToolCall({ name, input, status, result }: Props) {
   };
 
   const getTarget = () => {
-    if (filePath) return getFileName(filePath);
-    if (directory) return directory === '.' ? './' : directory;
+    if (path) {
+      if (isList) {
+        return path === '.' ? './' : path;
+      }
+      return getFileName(path);
+    }
     if (command) return command.length > 40 ? command.slice(0, 40) + '…' : command;
     return null;
   };
