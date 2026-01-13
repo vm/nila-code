@@ -243,7 +243,7 @@ export class Agent {
       try {
         const response = await this.client.chat.completions.create({
           model: this.model,
-          max_tokens: 8096,
+          max_completion_tokens: 8096,
           messages: [
             { role: 'system', content: getSystemPrompt() },
             ...openAIMessages,
