@@ -207,6 +207,22 @@ describe('listCommands', () => {
 describe('expandInput', () => {
   let testDir: string;
 
+  function expectAgent(
+    result: import('../../src/commands/index').ExpandResult
+  ): asserts result is Extract<import('../../src/commands/index').ExpandResult, { kind: 'agent' }> {
+    if (result.kind !== 'agent') {
+      throw new Error(`Expected agent result, got: ${result.kind}`);
+    }
+  }
+
+  function expectLocal(
+    result: import('../../src/commands/index').ExpandResult
+  ): asserts result is Extract<import('../../src/commands/index').ExpandResult, { kind: 'local' }> {
+    if (result.kind !== 'local') {
+      throw new Error(`Expected local result, got: ${result.kind}`);
+    }
+  }
+
   beforeEach(() => {
     testDir = mkdtempSync(join(tmpdir(), 'commands-test-'));
   });
@@ -217,7 +233,7 @@ describe('expandInput', () => {
 
   it('returns agent result for non-slash input', () => {
     const result = expandInput('regular text', testDir);
-    expect(result.kind).toBe('agent');
+    expectAgent(result);
     expect(result.userText).toBe('regular text');
     expect(result.prompt).toBe('regular text');
   });
@@ -230,7 +246,7 @@ describe('expandInput', () => {
     writeFileSync(join(testDir, '.code', 'skills', 'qr-code', 'SKILL.md'), 'QR');
 
     const result = expandInput('/help', testDir);
-    expect(result.kind).toBe('local');
+    expectLocal(result);
     expect(result.userText).toBe('/help');
     expect(result.outputText).toContain('Available commands:');
     expect(result.outputText).toContain('/review');
@@ -239,14 +255,14 @@ describe('expandInput', () => {
 
   it('/help shows message when no commands exist', () => {
     const result = expandInput('/help', testDir);
-    expect(result.kind).toBe('local');
+    expectLocal(result);
     expect(result.outputText).toContain('Available commands:');
     expect(result.outputText).toContain('No commands or skills found');
   });
 
   it('unknown command returns local error message pointing to /help', () => {
     const result = expandInput('/nope', testDir);
-    expect(result.kind).toBe('local');
+    expectLocal(result);
     expect(result.error).toBe(true);
     expect(result.outputText).toContain('Unknown command: /nope');
     expect(result.outputText).toContain('/help');
@@ -258,7 +274,7 @@ describe('expandInput', () => {
     writeFileSync(join(commandsDir, 'review.md'), 'Review the code for correctness.');
 
     const result = expandInput('/review the auth module', testDir);
-    expect(result.kind).toBe('agent');
+    expectAgent(result);
     expect(result.userText).toBe('/review the auth module');
     expect(result.prompt).toContain('Review the code for correctness.');
     expect(result.prompt).toContain('the auth module');
@@ -271,7 +287,7 @@ describe('expandInput', () => {
     writeFileSync(join(skillsDir, 'make_qr.py'), 'print("qr")');
 
     const result = expandInput('/qr-code "hello world"', testDir);
-    expect(result.kind).toBe('agent');
+    expectAgent(result);
     expect(result.userText).toBe('/qr-code "hello world"');
     expect(result.prompt).toContain('Generate a QR code.');
     expect(result.prompt).toContain('Files in skill:');
@@ -285,7 +301,7 @@ describe('expandInput', () => {
     writeFileSync(join(skillsDir, 'SKILL.md'), 'Simple skill.');
 
     const result = expandInput('/simple', testDir);
-    expect(result.kind).toBe('agent');
+    expectAgent(result);
     expect(result.prompt).toBe('Simple skill.');
     expect(result.prompt).not.toContain('Files in skill:');
   });
@@ -296,7 +312,7 @@ describe('expandInput', () => {
     writeFileSync(join(commandsDir, 'test.md'), 'Test command.');
 
     const result = expandInput('/test', testDir);
-    expect(result.kind).toBe('agent');
+    expectAgent(result);
     expect(result.prompt).toBe('Test command.');
   });
 });

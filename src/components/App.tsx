@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Box, Text, useApp, useStdout } from 'ink';
-import Spinner from 'ink-spinner';
+import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import { Agent } from '../agent/agent';
-import { Message } from './Message';
-import { ToolCall } from './ToolCall';
 import { Input } from './Input';
 import { MessageRole, ToolCallStatus } from '../agent/types';
 import { splitForToolCalls } from './transcript';
 import { cwd } from 'node:process';
 import { expandInput } from '../commands/index';
+import { TranscriptView } from './TranscriptView';
 
 type MessageItem = {
   role: MessageRole;
@@ -48,6 +46,8 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [terminalHeight, setTerminalHeight] = useState(stdout.rows || 24);
+  const [terminalWidth, setTerminalWidth] = useState(stdout.columns || 80);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   useEffect(() => {
     const handleExit = () => exit();
@@ -56,7 +56,10 @@ export function App() {
   }, [exit]);
 
   useEffect(() => {
-    const updateSize = () => setTerminalHeight(stdout.rows || 24);
+    const updateSize = () => {
+      setTerminalHeight(stdout.rows || 24);
+      setTerminalWidth(stdout.columns || 80);
+    };
     updateSize();
     stdout.on('resize', updateSize);
     return () => { stdout.off('resize', updateSize); };
@@ -67,6 +70,7 @@ export function App() {
     const expanded = expandInput(text, workingDir);
 
     setMessages(prev => [...prev, { role: MessageRole.USER, content: expanded.userText }]);
+    setScrollOffset(0);
     setIsLoading(true);
     setError(null);
     setToolCalls([]);
@@ -110,10 +114,40 @@ export function App() {
     toolCalls,
   });
 
+  const hasBanner = messages.length === 0;
+  const inputHeight = 2;
+  const transcriptHeight = Math.max(1, terminalHeight - inputHeight);
+  const contentWidth = Math.max(10, terminalWidth - 4);
+
+  useInput((input, key) => {
+    if (hasBanner) return;
+    const page = Math.max(1, transcriptHeight - 1);
+
+    if (key.upArrow) {
+      setScrollOffset(prev => prev + 1);
+      return;
+    }
+
+    if (key.downArrow) {
+      setScrollOffset(prev => Math.max(0, prev - 1));
+      return;
+    }
+
+    if (key.pageUp) {
+      setScrollOffset(prev => prev + page);
+      return;
+    }
+
+    if (key.pageDown) {
+      setScrollOffset(prev => Math.max(0, prev - page));
+      return;
+    }
+  });
+
   return (
     <Box flexDirection="column" height={terminalHeight}>
-      {messages.length === 0 && (
-        <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
+      {hasBanner && (
+        <Box flexDirection="column" alignItems="center" justifyContent="center" flexShrink={0}>
           <Box flexDirection="column">
             {banner.map((line, i) => (
               <Text key={i} color={gradientColors[i]}>{line}</Text>
@@ -126,69 +160,26 @@ export function App() {
         </Box>
       )}
 
-      <Box flexDirection="column" paddingX={2} paddingY={1} flexGrow={1}>
-        {before.map((msg, idx) => (
-          <Box
-            key={idx}
-            marginTop={
-              idx === 0
-                ? 0
-                : before[idx - 1]?.role === MessageRole.USER && msg.role === MessageRole.ASSISTANT
-                  ? 0
-                  : 1
-            }
-          >
-            <Message role={msg.role} content={msg.content} />
-          </Box>
-        ))}
-        
-        {isLoading && toolCalls.length === 0 && (
-          <Box marginTop={messages.length > 0 ? 1 : 0}>
-            <Text color="yellow"><Spinner type="dots" /></Text>
-            <Text color="gray"> thinking</Text>
-          </Box>
-        )}
+      {!hasBanner && (
+        <Box paddingX={2} flexGrow={1} minHeight={0}>
+          <TranscriptView
+            messages={before}
+            afterAssistant={afterAssistant}
+            toolCalls={toolCalls.map(tc => ({
+              name: tc.name,
+              status: tc.status,
+              result: tc.result,
+            }))}
+            isLoading={isLoading}
+            error={error}
+            width={contentWidth}
+            height={transcriptHeight}
+            scrollOffset={scrollOffset}
+          />
+        </Box>
+      )}
 
-        {toolCalls.length > 0 && (
-          <Box
-            flexDirection="column"
-            marginTop={
-              before.length === 0
-                ? 0
-                : before[before.length - 1]?.role === MessageRole.USER
-                  ? 0
-                  : 1
-            }
-          >
-            {toolCalls.map(tc => (
-              <ToolCall
-                key={tc.id}
-                name={tc.name}
-                input={tc.input}
-                status={tc.status}
-                result={tc.result}
-              />
-            ))}
-          </Box>
-        )}
-
-        {afterAssistant && (
-          <Box marginTop={1}>
-            <Message
-              role={afterAssistant.role}
-              content={afterAssistant.content}
-            />
-          </Box>
-        )}
-        
-        {error && (
-          <Box marginTop={1}>
-            <Text color="red">error: {error}</Text>
-          </Box>
-        )}
-      </Box>
-
-      <Box paddingX={2} paddingBottom={1}>
+      <Box paddingX={2} paddingBottom={1} flexShrink={0} height={inputHeight}>
         <Input onSubmit={handleSubmit} disabled={isLoading} />
       </Box>
     </Box>
