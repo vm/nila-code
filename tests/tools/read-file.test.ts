@@ -41,9 +41,10 @@ describe('readFile', () => {
     expect(result).toBe(content);
   });
 
-  // Note: Testing non-Error catch blocks (line 11) is difficult because:
-  // 1. Node.js/Bun always throws Error instances
-  // 2. fs module properties are readonly and can't be mocked
-  // This defensive code path is very unlikely to be hit in practice
+  it('handles directory instead of file', () => {
+    // Try to read a directory as a file
+    const result = readFile(testDir);
+    expect(result).toContain('Error: Failed to read file');
+  });
 });
 

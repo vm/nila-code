@@ -78,9 +78,21 @@ describe('editFile', () => {
     expect(newContent).toBe('Hello!');
   });
 
-  // Note: Testing non-Error catch blocks (line 45) is difficult because:
-  // 1. Node.js/Bun always throws Error instances
-  // 2. fs module properties are readonly and can't be mocked
-  // This defensive code path is very unlikely to be hit in practice
+  it('handles file edit errors on non-existent file replacement', () => {
+    const nonExistentFile = join(testDir, 'nonexistent.txt');
+    
+    const result = editFile(nonExistentFile, 'old', 'new');
+    expect(result).toContain('Error: File');
+    expect(result).toContain('does not exist');
+  });
+
+  it('handles file creation with special characters in path', () => {
+    // Test with a path that might cause issues but still be valid
+    const specialPath = join(testDir, 'special chars file.txt');
+    
+    const result = editFile(specialPath, '', 'content');
+    expect(result).toContain('Created file');
+    expect(readFileSync(specialPath, 'utf-8')).toBe('content');
+  });
 });
 

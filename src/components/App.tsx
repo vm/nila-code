@@ -5,7 +5,7 @@ import { Agent } from '../agent/agent';
 import { Message } from './Message';
 import { ToolCall } from './ToolCall';
 import { Input } from './Input';
-import { MessageRole, ToolCallStatus, ToolName } from '../agent/types';
+import { MessageRole, ToolCallStatus } from '../agent/types';
 import type { ToolCall as ToolCallType } from '../agent/types';
 import { cwd } from 'node:process';
 
@@ -37,7 +37,7 @@ export function App() {
     return new Agent(undefined, {
       onToolStart: (id, name, input) => {
         setActiveToolCalls(prev => {
-          const updated = [...prev, { id, name, input, status: ToolCallStatus.RUNNING }];
+          const updated = [...prev, { id, name, input, status: ToolCallStatus.RUNNING as const }];
           activeToolCallsRef.current = updated;
           return updated;
         });
@@ -93,23 +93,12 @@ export function App() {
 
   const workingDir = cwd();
 
-  // Group tool calls for cleaner display
-  const groupedToolCalls = () => {
-    const reads = toolCalls.filter(tc => tc.name === ToolName.READ_FILE);
-    const edits = toolCalls.filter(tc => tc.name === ToolName.EDIT_FILE);
-    const lists = toolCalls.filter(tc => tc.name === ToolName.LIST_FILES);
-    const runs = toolCalls.filter(tc => tc.name === ToolName.RUN_COMMAND);
-    return { reads, edits, lists, runs };
-  };
-
-  const getFileName = (path: string) => path.split('/').pop() || path;
 
   const hasCurrentTurn = isLoading || toolCalls.length > 0;
   const lastAssistantIdx = hasCurrentTurn 
     ? messages.map(m => m.role).lastIndexOf(MessageRole.ASSISTANT)
     : -1;
 
-  const { reads, edits, lists, runs } = groupedToolCalls();
 
   const banner = [
     '███╗   ██╗██╗██╗      █████╗      ██████╗ ██████╗ ██████╗ ███████╗',
@@ -175,42 +164,12 @@ export function App() {
           </Box>
         )}
 
-        {/* Completed tool calls - grouped */}
+        {/* Completed tool calls */}
         {toolCalls.length > 0 && (
           <Box flexDirection="column" marginTop={messages.length > 0 && activeToolCalls.length === 0 ? 1 : 0}>
-            {/* Grouped reads */}
-            {reads.length > 0 && (
-              <Box>
-                <Text color="green">✓</Text>
-                <Text color="gray"> read </Text>
-                <Text color="white">{reads.map(r => getFileName(String(r.input?.file_path || ''))).join(', ')}</Text>
-              </Box>
-            )}
-            
-            {/* Grouped lists */}
-            {lists.length > 0 && (
-              <Box>
-                <Text color="green">✓</Text>
-                <Text color="gray"> listed </Text>
-                <Text color="white">{lists.length} {lists.length === 1 ? 'directory' : 'directories'}</Text>
-              </Box>
-            )}
-            
-            {/* Individual edits */}
-            {edits.map((tc, idx) => (
+            {toolCalls.map((tc, idx) => (
               <ToolCall
-                key={`edit-${idx}`}
-                name={tc.name}
-                input={tc.input}
-                status={tc.error ? ToolCallStatus.ERROR : ToolCallStatus.DONE}
-                result={tc.result}
-              />
-            ))}
-            
-            {/* Individual runs */}
-            {runs.map((tc, idx) => (
-              <ToolCall
-                key={`run-${idx}`}
+                key={idx}
                 name={tc.name}
                 input={tc.input}
                 status={tc.error ? ToolCallStatus.ERROR : ToolCallStatus.DONE}
