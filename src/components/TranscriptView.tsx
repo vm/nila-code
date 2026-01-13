@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import { MessageRole, ToolCallStatus } from '../agent/types';
+import { MessageRole, ToolCallStatus, ToolName } from '../agent/types';
 
 type MessageItem = {
   role: MessageRole;
@@ -8,6 +8,7 @@ type MessageItem = {
 
 type ToolCallItem = {
   name: string;
+  input?: Record<string, unknown>;
   status: ToolCallStatus;
   result?: string;
 };
@@ -62,6 +63,50 @@ function toolStatusColor(status: ToolCallStatus): string {
   }
 }
 
+function getFileName(path: string): string {
+  const parts = path.split('/');
+  return parts[parts.length - 1] || path;
+}
+
+function formatToolCallName(name: string): string {
+  switch (name) {
+    case ToolName.READ_FILE:
+      return 'read file';
+    case ToolName.EDIT_FILE:
+      return 'edit file';
+    case ToolName.LIST_FILES:
+      return 'list files';
+    case ToolName.RUN_COMMAND:
+      return 'run command';
+    default:
+      return name.replace(/_/g, ' ');
+  }
+}
+
+function formatToolCallTarget(name: string, input?: Record<string, unknown>): string | null {
+  const safeInput = input ?? {};
+  const path = safeInput.path ? String(safeInput.path) : null;
+  const command = safeInput.command ? String(safeInput.command) : null;
+
+  if (name === ToolName.RUN_COMMAND && command) {
+    return command.length > 60 ? command.slice(0, 60) + '…' : command;
+  }
+
+  if (path) {
+    if (name === ToolName.LIST_FILES) return path === '.' ? './' : path;
+    return getFileName(path);
+  }
+
+  return null;
+}
+
+function formatToolCallHeader(tc: ToolCallItem): string {
+  const name = formatToolCallName(tc.name);
+  const target = formatToolCallTarget(tc.name, tc.input);
+  const status = toolStatusLabel(tc.status);
+  return target ? `${name}: ${target} (${status})` : `${name} (${status})`;
+}
+
 function buildTranscriptLines(params: {
   messages: MessageItem[];
   toolCalls: ToolCallItem[];
@@ -92,7 +137,7 @@ function buildTranscriptLines(params: {
   }
 
   for (const tc of toolCalls) {
-    const header = `tool ${tc.name} (${toolStatusLabel(tc.status)})`;
+    const header = formatToolCallHeader(tc);
     lines.push({ text: header, color: toolStatusColor(tc.status) });
     if (tc.result) {
       const wrapped = wrapText(tc.result, width);

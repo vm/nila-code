@@ -45,7 +45,7 @@ export function ToolCall({ name, input, status, result }: Props) {
     if (isRead) return 'read file';
     if (isEdit) return 'edit file';
     if (isList) return 'list files';
-    if (isRun) return 'run';
+    if (isRun) return 'run command';
     return name.replace(/_/g, ' ');
   };
 

@@ -167,6 +167,7 @@ export function App() {
             afterAssistant={afterAssistant}
             toolCalls={toolCalls.map(tc => ({
               name: tc.name,
+              input: tc.input,
               status: tc.status,
               result: tc.result,
             }))}
