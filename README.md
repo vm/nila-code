@@ -60,20 +60,21 @@ The agent chats in the terminal and can invoke a small set of tools to operate o
 bun install
 ```
 
-**Option 1: Direct OpenAI**
+### Configuration
+
+Copy the example environment file and fill in your API key:
 
 ```bash
-echo "OPENAI_API_KEY=your-key-here" > .env
-echo "OPENAI_MODEL=gpt-4o" >> .env
-bun run start
+cp .env.example .env
 ```
 
-**Option 2: OpenRouter (supports OpenAI, Anthropic, and other models)**
+Edit `.env` and set either:
+- **Option 1: Direct OpenAI** - Set `OPENAI_API_KEY` and `OPENAI_MODEL` (e.g., `gpt-5.2`)
+- **Option 2: OpenRouter** - Set `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` (e.g., `openai/gpt-5.2`)
+
+Then run:
 
 ```bash
-echo "OPENROUTER_API_KEY=your-key-here" > .env
-echo "OPENROUTER_MODEL=openai/gpt-4o" >> .env
-# Or use Anthropic models: echo "OPENROUTER_MODEL=anthropic/claude-3.5-sonnet" >> .env
 bun run start
 ```
 
@@ -191,13 +192,13 @@ plans/          Design notes / roadmap
 | Variable | Required | Description |
 |---|---:|---|
 | `OPENAI_API_KEY` | Yes | API key from OpenAI |
-| `OPENAI_MODEL` | Yes | Model name (e.g., `gpt-4o`, `gpt-4-turbo`) |
+| `OPENAI_MODEL` | Yes | Model name (e.g., `gpt-5.2`, `gpt-5-mini`, `gpt-4.1`) |
 
 **For OpenRouter:**
 | Variable | Required | Description |
 |---|---:|---|
 | `OPENROUTER_API_KEY` | Yes | API key from OpenRouter |
-| `OPENROUTER_MODEL` | Yes | Model identifier (e.g., `openai/gpt-4o`, `anthropic/claude-3.5-sonnet`) |
+| `OPENROUTER_MODEL` | Yes | Model identifier (e.g., `openai/gpt-5.2`, `anthropic/claude-3.5-sonnet`) |
 | `OPENROUTER_SITE_URL` | No | Site URL for OpenRouter headers (default: `https://github.com`) |
 | `OPENROUTER_APP_NAME` | No | App name for OpenRouter headers (default: `Nila Code`) |
 
