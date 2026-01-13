@@ -8,6 +8,7 @@ import { Input } from './Input';
 import { MessageRole, ToolCallStatus } from '../agent/types';
 import { splitForToolCalls } from './transcript';
 import { cwd } from 'node:process';
+import { expandInput } from '../commands/index';
 
 type MessageItem = {
   role: MessageRole;
@@ -62,13 +63,25 @@ export function App() {
   }, [stdout]);
 
   const handleSubmit = async (text: string) => {
-    setMessages(prev => [...prev, { role: MessageRole.USER, content: text }]);
+    const workingDir = cwd();
+    const expanded = expandInput(text, workingDir);
+
+    setMessages(prev => [...prev, { role: MessageRole.USER, content: expanded.userText }]);
     setIsLoading(true);
     setError(null);
     setToolCalls([]);
 
+    if (expanded.kind === 'local') {
+      setMessages(prev => [...prev, { role: MessageRole.ASSISTANT, content: expanded.outputText }]);
+      if (expanded.error) {
+        setError(expanded.outputText);
+      }
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await agent.chat(text);
+      const response = await agent.chat(expanded.prompt);
       setMessages(prev => [...prev, { role: MessageRole.ASSISTANT, content: response.text }]);
       if (response.error) setError(response.error);
     } catch (err) {
