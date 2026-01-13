@@ -224,7 +224,7 @@ function parseToolResultLines(text: string, toolName: string, width: number, inp
     const commandMaxWidth = borderWidth - commandPrefix.length;
     const wrappedCommand = wrapLine(commandText, commandMaxWidth);
     for (const w of wrappedCommand) {
-      lines.push({ text: `${commandPrefix}${w}`, color: 'yellow', dimColor: false });
+      lines.push({ text: `${commandPrefix}${w}`, color: 'cyan', dimColor: false });
     }
     
     const contentLines = splitLines(text);
@@ -235,7 +235,7 @@ function parseToolResultLines(text: string, toolName: string, width: number, inp
         const wrapped = wrapLine(logicalLine, borderWidth - 2);
         for (const w of wrapped) {
           const borderedLine = `│ ${w}`;
-          lines.push({ text: borderedLine, color: 'gray', dimColor: false });
+          lines.push({ text: borderedLine, color: 'white', dimColor: false });
         }
       }
     }
