@@ -49,6 +49,7 @@ export function App() {
   const [terminalHeight, setTerminalHeight] = useState(stdout.rows || 24);
   const [terminalWidth, setTerminalWidth] = useState(stdout.columns || 80);
   const [scrollOffset, setScrollOffset] = useState(0);
+  const [expandedToolCalls, setExpandedToolCalls] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const handleExit = () => exit();
@@ -146,6 +147,22 @@ export function App() {
       setScrollOffset(prev => Math.max(0, prev - page));
       return;
     }
+
+    if (key.return && toolCalls.length > 0) {
+      const lastToolCall = toolCalls[toolCalls.length - 1];
+      if (lastToolCall && lastToolCall.id) {
+        setExpandedToolCalls(prev => {
+          const next = new Set(prev);
+          if (next.has(lastToolCall.id)) {
+            next.delete(lastToolCall.id);
+          } else {
+            next.add(lastToolCall.id);
+          }
+          return next;
+        });
+      }
+      return;
+    }
   });
 
   return (
@@ -170,6 +187,7 @@ export function App() {
             messages={before}
             afterAssistant={afterAssistant}
             toolCalls={toolCalls.map(tc => ({
+              id: tc.id,
               name: tc.name,
               input: tc.input,
               status: tc.status,
@@ -177,6 +195,7 @@ export function App() {
             }))}
             isLoading={isLoading}
             thinkingStartTime={thinkingStartTime}
+            expandedToolCalls={expandedToolCalls}
             error={error}
             width={contentWidth}
             height={transcriptHeight}

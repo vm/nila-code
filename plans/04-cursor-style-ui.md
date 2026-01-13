@@ -293,25 +293,25 @@ Allow expanding/collapsing verbose tool outputs.
 
 ### Implementation checklist
 
-- [ ] **1) Add expansion state**
+- [x] **1) Add expansion state**
   - `expandedToolCalls: Set<string>` in App.tsx
   - Pass to TranscriptView
 
-- [ ] **2) Implement collapse/expand toggle**
+- [x] **2) Implement collapse/expand toggle**
   - Default: collapsed (show header only)
   - Keyboard: Enter on focused tool call toggles
   - Show indicator in header
 
-- [ ] **3) Render based on state**
+- [x] **3) Render based on state**
   - Collapsed: single line with `▶ read file: config.ts (done)`
   - Expanded: full block with content
 
 ### Test cases
 
-- [ ] Tool calls start collapsed
-- [ ] Toggle changes display
-- [ ] State persists across renders
-- [ ] Multiple tool calls can be independently expanded
+- [x] Tool calls start collapsed
+- [x] Toggle changes display
+- [x] State persists across renders
+- [x] Multiple tool calls can be independently expanded
 
 ---
 
@@ -354,7 +354,7 @@ Allow expanding/collapsing verbose tool outputs.
 - [ ] Smooth transition to final diff
 
 ### Phase 6 (Collapsible)
-- [ ] Tool outputs collapsible
-- [ ] Keyboard navigation works
-- [ ] State persists correctly
+- [x] Tool outputs collapsible
+- [x] Keyboard navigation works
+- [x] State persists correctly
 

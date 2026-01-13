@@ -9,6 +9,7 @@ type MessageItem = {
 };
 
 type ToolCallItem = {
+  id?: string;
   name: string;
   input?: Record<string, unknown>;
   status: ToolCallStatus;
@@ -223,13 +224,14 @@ function parseToolResultLines(text: string, toolName: string, width: number, inp
   return lines;
 }
 
-function formatToolCallHeaderColored(tc: ToolCallItem): Line {
+function formatToolCallHeaderColored(tc: ToolCallItem, isExpanded: boolean): Line {
   const name = formatToolCallName(tc.name);
   const target = formatToolCallTarget(tc.name, tc.input);
   const status = toolStatusLabel(tc.status);
   const statusColor = toolStatusColor(tc.status);
+  const indicator = isExpanded ? '▼' : '▶';
 
-  let headerText = name;
+  let headerText = `${indicator} ${name}`;
   if (target) {
     headerText += `: ${target}`;
   }
@@ -245,8 +247,9 @@ function buildTranscriptLines(params: {
   thinkingElapsedSeconds: number | null;
   error: string | null;
   width: number;
+  expandedToolCalls: Set<string>;
 }): Line[] {
-  const { messages, toolCalls, isLoading, thinkingElapsedSeconds, error, width } = params;
+  const { messages, toolCalls, isLoading, thinkingElapsedSeconds, error, width, expandedToolCalls } = params;
   const lines: Line[] = [];
 
   for (const msg of messages) {
@@ -272,9 +275,11 @@ function buildTranscriptLines(params: {
   }
 
   for (const tc of toolCalls) {
-    const header = formatToolCallHeaderColored(tc);
+    const toolCallId = tc.id || '';
+    const isExpanded = expandedToolCalls.has(toolCallId);
+    const header = formatToolCallHeaderColored(tc, isExpanded);
     lines.push(header);
-    if (tc.result !== undefined && tc.result !== null) {
+    if (isExpanded && tc.result !== undefined && tc.result !== null) {
       const truncated = truncateToolResult(tc.name, tc.result, tc.input);
       const resultLines = parseToolResultLines(truncated, tc.name, width, tc.input);
       lines.push(...resultLines);
@@ -297,6 +302,7 @@ export function TranscriptView(props: {
   toolCalls: ToolCallItem[];
   isLoading: boolean;
   thinkingStartTime?: number | null;
+  expandedToolCalls?: Set<string>;
   error: string | null;
   width: number;
   height: number;
@@ -305,6 +311,7 @@ export function TranscriptView(props: {
   const width = Math.max(1, props.width);
   const height = Math.max(1, props.height);
   const scrollOffset = Math.max(0, props.scrollOffset ?? 0);
+  const expandedToolCalls = props.expandedToolCalls || new Set<string>();
 
   const [thinkingElapsedSeconds, setThinkingElapsedSeconds] = useState<number | null>(null);
 
@@ -334,6 +341,7 @@ export function TranscriptView(props: {
     thinkingElapsedSeconds,
     error: props.error,
     width,
+    expandedToolCalls,
   });
 
   if (props.afterAssistant) {
@@ -344,6 +352,7 @@ export function TranscriptView(props: {
       thinkingElapsedSeconds: null,
       error: null,
       width,
+      expandedToolCalls: new Set(),
     });
     allLines.push(...assistantLines);
   }
