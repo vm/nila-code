@@ -6,11 +6,11 @@ This plan describes a **slash command system** for the agent's UI input, so you 
 
 - **When you want this**: you find yourself repeatedly typing the same instruction ("review this module", "summarize logs", etc.) and you want a local shortcut.
 - **What it enables**:
-  - **Commands**: a single markdown file (example: `.prompts/review.md`) expanded into the prompt sent to the model.
-  - **Skills**: a directory containing `skill.md` plus supporting files (example: `.skills/qr-code/skill.md` and scripts/templates) whose contents are surfaced to the model as context.
+  - **Commands**: a single markdown file (example: `.code/commands/review.md`) expanded into the prompt sent to the model.
+  - **Skills**: a directory containing `SKILL.md` plus supporting files (example: `.code/skills/qr-code/SKILL.md` and scripts/templates) whose contents are surfaced to the model as context.
   - **Built-in help**: `/help` lists available commands/skills locally.
 - **How you'd use it in this repo**:
-  - create project-local `.prompts/` or `.skills/` entries for your workflow
+  - create project-local `.code/commands/` or `.code/skills/` entries for your workflow
   - type `/help` in the Ink UI to see what's available
   - type `/review <rest…>` (or `/qr-code <rest…>`) to expand into the agent prompt
 
@@ -55,19 +55,12 @@ ExpandResult =
 
 Search in this order (first match wins):
 
-1. **Project commands**: `<workingDir>/.prompts/<name>.md`
-2. **Project skills**: `<workingDir>/.skills/<name>/skill.md`
-3. **Global commands**: `<configDir>/prompts/<name>.md`
-4. **Global skills**: `<configDir>/skills/<name>/skill.md`
+1. **Project commands**: `<workingDir>/.code/commands/<name>.md`
+2. **Project skills**: `<workingDir>/.code/skills/<name>/SKILL.md`
+3. **Personal commands**: `~/.code/commands/<name>.md` *(Phase 2)*
+4. **Personal skills**: `~/.code/skills/<name>/SKILL.md` *(Phase 2)*
 
-**Config directory** (cross-platform):
-- macOS: `~/Library/Application Support/nila-code/`
-- Linux: `~/.config/nila-code/`
-- Windows: `%APPDATA%/nila-code/`
-
-Use `process.platform` to determine the correct path, or use a library like `env-paths`.
-
-**Conflict resolution**: if both `.prompts/review.md` and `.skills/review/skill.md` exist, the command (`.prompts/`) wins. This matches the search order.
+**Conflict resolution**: if both `.code/commands/review.md` and `.code/skills/review/SKILL.md` exist, the command wins. This matches the search order.
 
 ### Integration point
 
@@ -83,20 +76,23 @@ Use `process.platform` to determine the correct path, or use a library like `env
 
 ---
 
-## Phase 1: Tests (define the minimal feature)
+## Phase 1: Project-level commands/skills
 
-## Concrete examples (what should happen)
+This phase implements project-local discovery only (`.code/commands/` and `.code/skills/` in the working directory). Personal directories are deferred to Phase 2.
+
+### Concrete examples (what should happen)
 
 ### Example: command file
 
 Project layout:
 
 ```
-.prompts/
-  review.md
+.code/
+  commands/
+    review.md
 ```
 
-Example `.prompts/review.md` content (short on purpose):
+Example `.code/commands/review.md` content (short on purpose):
 
 ```
 Review the code for correctness and readability.
@@ -116,13 +112,14 @@ User input and expected behavior:
 Project layout:
 
 ```
-.skills/
-  qr-code/
-    skill.md
-    make_qr.py
+.code/
+  skills/
+    qr-code/
+      SKILL.md
+      make_qr.py
 ```
 
-Example `.skills/qr-code/skill.md` content:
+Example `.code/skills/qr-code/SKILL.md` content:
 
 ```
 Generate a QR code.
@@ -134,7 +131,7 @@ User input and expected behavior:
 
 - input: `/qr-code "hello world"`
 - prompt sent to agent contains:
-  - skill.md content with `{{skill_path}}` replaced with absolute path to `.skills/qr-code/`
+  - SKILL.md content with `{{skill_path}}` replaced with absolute path to `.code/skills/qr-code/`
   - a "Files in skill:" section listing `make_qr.py`
   - appended rest text: `"hello world"` (or without quotes depending on parsing phase)
 
@@ -148,17 +145,17 @@ User input and expected behavior:
 
 ### Discovery
 
-- [ ] `findCommand(name, dir)` loads a command from `.prompts/<name>.md` if present
-- [ ] `findCommand(name, dir)` loads a skill from `.skills/<name>/skill.md` if present
+- [ ] `findCommand(name, dir)` loads a command from `.code/commands/<name>.md` if present
+- [ ] `findCommand(name, dir)` loads a skill from `.code/skills/<name>/SKILL.md` if present
 - [ ] missing returns null
 - [ ] skill content replaces `{{skill_path}}` with the concrete absolute directory path
-- [ ] skill discovery returns a list of skill files (excluding `skill.md`) with relative paths
+- [ ] skill discovery returns a list of skill files (excluding `SKILL.md`) with relative paths
 
 ### Listing
 
 - [ ] `listCommands(dir)` returns all available command names and skill names, de-duped
-- [ ] project commands/skills appear before global ones
-- [ ] duplicate names (project overriding global) only appear once
+- [ ] project commands/skills appear before personal ones *(Phase 2)*
+- [ ] duplicate names (project overriding personal) only appear once *(Phase 2)*
 
 ### Expansion
 
@@ -170,7 +167,7 @@ User input and expected behavior:
 ### Suggested test cases (more specific)
 
 - [ ] **/help output contains discovered items**:
-  - create `.prompts/review.md` and `.skills/qr-code/skill.md` in a temp workspace
+  - create `.code/commands/review.md` and `.code/skills/qr-code/SKILL.md` in a temp workspace
   - call expand on `/help`
   - assert output includes `/review` and `/qr-code`
 - [ ] **unknown command is local error**:
@@ -184,12 +181,12 @@ User input and expected behavior:
   - expand `/qr-code`
   - assert prompt contains `make_qr.py`
   - assert prompt does not include the contents of `make_qr.py`
-- [ ] **project overrides global**:
-  - create both project `.prompts/foo.md` and global `prompts/foo.md`
+- [ ] **project overrides personal** *(Phase 2)*:
+  - create both project `.code/commands/foo.md` and personal `~/.code/commands/foo.md`
   - expand `/foo`
   - assert the project version content is used
 - [ ] **case insensitive lookup**:
-  - create `.prompts/Review.md`
+  - create `.code/commands/Review.md`
   - expand `/review`
   - assert it finds the command
 
@@ -197,48 +194,29 @@ User input and expected behavior:
 
 - **Add**: `tests/commands/index.test.ts`
   - use `mkdtempSync` + `rmSync` (same pattern as existing tool tests)
-  - create `.prompts/` and `.skills/` under the temp dir
+  - create `.code/commands/` and `.code/skills/` under the temp dir
   - run assertions against `parseSlashCommand`, `findCommand`, `listCommands`, `expandInput`
 
 ---
 
-## Phase 2: Implementation (minimal)
-
-### Files to add / modify
-
-- [ ] **Add**: `src/commands/index.ts` with exports
-- [ ] **Modify**: `src/components/App.tsx` input submission path to expand commands before calling `agent.chat`
-
-## Implementation checklist (ordered)
+### Implementation checklist (Phase 1 - project-level only)
 
 - [ ] **1) Add `src/commands/index.ts` with the 4 exports**
   - `parseSlashCommand`, `findCommand`, `listCommands`, `expandInput`
   - Keep return types exactly as specified (so tests are stable)
-  - Verify by adding `tests/commands/index.test.ts` and running only parsing-related cases first
+  - Add `tests/commands/index.test.ts` with parsing tests first
 
 - [ ] **2) Implement project-local discovery**
-  - `.prompts/<name>.md`
-  - `.skills/<name>/skill.md`
-  - Verify: tests that create a temp `.prompts` and `.skills` workspace pass
+  - `.code/commands/<name>.md`
+  - `.code/skills/<name>/SKILL.md`
+  - Verify: tests that create a temp `.code/commands` and `.code/skills` workspace pass
 
-- [ ] **3) Add config directory helper**
-  - Create `getConfigDir(): string` that returns platform-appropriate path
-  - macOS: `~/Library/Application Support/nila-code/`
-  - Linux: `~/.config/nila-code/`
-  - Windows: `%APPDATA%/nila-code/`
-  - Verify: unit test that mocks `process.platform` and checks paths
-
-- [ ] **4) Implement global discovery**
-  - `<configDir>/prompts/<name>.md`
-  - `<configDir>/skills/<name>/skill.md`
-  - Search after project-local (project takes precedence)
-
-- [ ] **5) Implement expansion and `/help`**
+- [ ] **3) Implement expansion and `/help`**
   - `/help` returns `{ kind: 'local' ... }` and lists command names as `/name`
   - Unknown `/x` returns local error and suggests `/help`
   - Known commands/skills return `{ kind: 'agent', prompt: ... }`
 
-- [ ] **6) Wire into the UI (`src/components/App.tsx`)**
+- [ ] **4) Wire into the UI (`src/components/App.tsx`)**
   - In `handleSubmit`, call `expandInput(text, cwd())`
   - Always append user message with `userText` (the original input)
   - If local:
@@ -249,12 +227,29 @@ User input and expected behavior:
     - call `agent.chat(prompt)`
     - append assistant message with response
 
-### Search locations
+---
 
-- **Project commands**: `<workingDir>/.prompts/*.md`
-- **Project skills**: `<workingDir>/.skills/<name>/skill.md`
-- **Global commands**: `<configDir>/prompts/*.md`
-- **Global skills**: `<configDir>/skills/<name>/skill.md`
+## Phase 2: Personal commands/skills
+
+Add personal directory support (`~/.code/`) after Phase 1 is working.
+
+### Implementation checklist (Phase 2)
+
+- [ ] **1) Add home directory helper**
+  - Create `getPersonalDir(): string` that returns `~/.code/`
+  - Use `os.homedir()` to resolve `~`
+
+- [ ] **2) Implement personal discovery**
+  - `~/.code/commands/<name>.md`
+  - `~/.code/skills/<name>/SKILL.md`
+  - Search after project-local (project takes precedence)
+
+- [ ] **3) Update `/help` to show source (project vs user)**
+
+### Search locations (Phase 1)
+
+- **Project commands**: `<workingDir>/.code/commands/*.md`
+- **Project skills**: `<workingDir>/.code/skills/<name>/SKILL.md`
 
 ### Expansion rules
 
@@ -274,29 +269,33 @@ Keep these consistent so tests can assert on them:
 
 ### Built-in `/help`
 
-- [ ] prints available commands/skills (including both project + global)
-- [ ] shows command source (project vs global) for clarity
-- [ ] optionally supports `/help <query>` later (Phase 3+)
+- [ ] prints available commands/skills from project
+- [ ] prints available commands/skills including personal *(Phase 2)*
+- [ ] shows command source (project vs user) for clarity *(Phase 2)*
+- [ ] optionally supports `/help <query>` later *(Phase 3+)*
 
 ---
 
-## Phase 3+: Production hardening (optional)
+## Phase 3+: Production hardening (future)
 
 - [ ] **Dependencies**: add YAML parsing + fuzzy search libraries if you implement frontmatter/search
 - [ ] **Frontmatter metadata**: support YAML frontmatter in prompt files (name/description/parameters)
 - [ ] **Parameter parsing**: support `key=value` arguments, quoted values, and keep remaining tokens as rest
 - [ ] **Template rendering**: `{{param}}` substitutions and simple conditionals
 - [ ] **Fuzzy search**: suggest commands for typos and allow `/help <query>` filtering
-- [ ] **Project override of global**: allow `.prompts/.ignore` to disable specific global commands
+- [ ] **Project override of personal**: allow `.code/commands/.ignore` to disable specific personal commands
 - [ ] **Skill file auto-read**: optionally allow skills to mark certain files as "include content in prompt"
 
 ---
 
 ## Definition of done
 
+### Phase 1 (project-level)
 - [ ] `/help` works end-to-end in the UI
 - [ ] Unknown commands error locally (no agent call)
 - [ ] Known commands/skills expand into an agent prompt consistently
 - [ ] Skills never execute code; they only surface text and file names
-- [ ] Project commands/skills take precedence over global ones
-- [ ] Cross-platform config directory support works on macOS, Linux, and Windows
+
+### Phase 2 (personal)
+- [ ] Project commands/skills take precedence over personal ones
+- [ ] Personal directory `~/.code/` works across platforms
