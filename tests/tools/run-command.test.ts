@@ -8,7 +8,6 @@ describe('runCommand', () => {
   });
 
   it('returns combined stdout+stderr', () => {
-    // Using a command that outputs to both stdout and stderr
     const result = runCommand('echo "stdout" && echo "stderr" >&2');
     expect(result).toContain('stdout');
     expect(result).toContain('stderr');
@@ -27,10 +26,7 @@ describe('runCommand', () => {
   });
 
   it('handles git commit with message containing spaces', () => {
-    // Test that git commit messages with spaces are parsed correctly
-    // We'll use --dry-run to avoid actually committing
     const result = runCommand('git commit --dry-run -m "UI improvements and tests"');
-    // Should not error with pathspec issues - if it does, the error will contain "pathspec"
     expect(result).not.toContain('pathspec');
   });
 
@@ -55,27 +51,16 @@ describe('runCommand', () => {
   });
 
   it('handles escape at end of string (undefined nextChar)', () => {
-    // Test case where escape character is at the end (line 24)
-    // This tests the case where nextChar is undefined in parseCommand
-    // When we have a backslash at the end, nextChar will be undefined
     const result = runCommand('echo "test\\');
-    // Should handle gracefully without crashing - the backslash at end means nextChar is undefined
     expect(result).toBeDefined();
-    // The command should still execute (though it might have parsing issues)
   });
 
   it('handles backslash before quote at end of string', () => {
-    // Test the specific case where we have \ before " at end
-    // This should trigger line 24 when nextChar is undefined
     const result = runCommand('echo hello');
     expect(result).toBeDefined();
   });
 
   it('handles non-Error exceptions in catch block', () => {
-    // Test the catch block fallback for non-Error exceptions
-    // This is difficult to trigger directly, but we can test with an invalid command
-    // that might cause issues. However, spawnSync typically throws Error instances.
-    // For coverage, we need to ensure the fallback path is tested.
     const result = runCommand('nonexistent-command-that-does-not-exist-12345');
     expect(result).toContain('Error');
   });

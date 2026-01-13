@@ -32,7 +32,6 @@ export function ToolCall({ name, input, status, result }: Props) {
   const isList = name === ToolName.LIST_FILES;
   const isRun = name === ToolName.RUN_COMMAND;
 
-  // Status icon
   const getIcon = () => {
     if (status === ToolCallStatus.RUNNING) {
       return <Text color="yellow"><Spinner type="dots" /></Text>;
@@ -43,7 +42,6 @@ export function ToolCall({ name, input, status, result }: Props) {
     return <Text color="green">✓</Text>;
   };
 
-  // Tool name label
   const getToolLabel = () => {
     if (isRead) return 'read file';
     if (isEdit) return 'edit file';
@@ -52,7 +50,6 @@ export function ToolCall({ name, input, status, result }: Props) {
     return name.replace(/_/g, ' ');
   };
 
-  // Target info
   const getTarget = () => {
     if (filePath) return getFileName(filePath);
     if (directory) return directory === '.' ? './' : directory;
@@ -60,7 +57,6 @@ export function ToolCall({ name, input, status, result }: Props) {
     return null;
   };
 
-  // Diff stats for edits
   const getDiffInfo = () => {
     if (!isEdit) return null;
     const added = countLines(newStr || '');

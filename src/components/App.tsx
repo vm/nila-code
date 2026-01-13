@@ -113,26 +113,21 @@ export function App() {
 
   return (
     <Box flexDirection="column" height={terminalHeight}>
-      {/* Start Screen */}
       {messages.length === 0 && (
         <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
-          {/* Banner */}
           <Box flexDirection="column">
             {banner.map((line, i) => (
               <Text key={i} color={gradientColors[i]}>{line}</Text>
             ))}
           </Box>
           
-          {/* Subtitle */}
           <Box marginTop={2}>
             <Text color="gray" dimColor>{workingDir}</Text>
           </Box>
         </Box>
       )}
 
-      {/* Content */}
       <Box flexDirection="column" paddingX={2} paddingY={1} flexGrow={1}>
-        {/* Messages (except last assistant if we have tool calls) */}
         {messages.map((msg, idx) => {
           if (idx === lastAssistantIdx && toolCalls.length > 0) return null;
           return (
@@ -142,7 +137,6 @@ export function App() {
           );
         })}
         
-        {/* Loading state - thinking */}
         {isLoading && activeToolCalls.length === 0 && toolCalls.length === 0 && (
           <Box marginTop={messages.length > 0 ? 1 : 0}>
             <Text color="yellow"><Spinner type="dots" /></Text>
@@ -150,7 +144,6 @@ export function App() {
           </Box>
         )}
 
-        {/* Active tool calls */}
         {activeToolCalls.length > 0 && (
           <Box marginTop={messages.length > 0 ? 1 : 0} flexDirection="column">
             {activeToolCalls.map(tc => (
@@ -164,7 +157,6 @@ export function App() {
           </Box>
         )}
 
-        {/* Completed tool calls */}
         {toolCalls.length > 0 && (
           <Box flexDirection="column" marginTop={messages.length > 0 && activeToolCalls.length === 0 ? 1 : 0}>
             {toolCalls.map((tc, idx) => (
@@ -179,14 +171,12 @@ export function App() {
           </Box>
         )}
         
-        {/* Last assistant message (after tool calls) */}
         {lastAssistantIdx >= 0 && toolCalls.length > 0 && (
           <Box marginTop={1}>
             <Message role={MessageRole.ASSISTANT} content={messages[lastAssistantIdx].content} />
           </Box>
         )}
         
-        {/* Error */}
         {error && (
           <Box marginTop={1}>
             <Text color="red">error: {error}</Text>
@@ -194,7 +184,6 @@ export function App() {
         )}
       </Box>
 
-      {/* Input */}
       <Box paddingX={2} paddingBottom={1}>
         <Input onSubmit={handleSubmit} disabled={isLoading} />
       </Box>

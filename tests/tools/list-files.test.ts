@@ -53,7 +53,6 @@ describe('listFiles', () => {
   });
 
   it('handles permission denied scenarios', () => {
-    // Try to access a path that doesn't exist to trigger an error
     const invalidPath = join(testDir, 'very-deeply', 'nested', 'nonexistent', 'path');
     
     const result = listFiles(invalidPath);

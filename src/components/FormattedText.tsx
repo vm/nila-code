@@ -32,7 +32,6 @@ function parseInlineCode(text: string): TextPart[] {
 export function FormattedText({ content }: Props) {
   const parts: Part[] = [];
   
-  // Parse code blocks
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
   let lastIndex = 0;
   let match;
@@ -79,7 +78,6 @@ export function FormattedText({ content }: Props) {
           );
         }
         
-        // Render text with inline code
         const textParts = parseInlineCode(part.content);
         
         return (

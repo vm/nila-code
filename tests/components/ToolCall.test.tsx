@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'bun:test';
 
-// Test ToolCall component props and behavior
-// Since ToolCall is a presentational component, we test its logic
-
 describe('ToolCall', () => {
   it('should accept name and status props', () => {
     const name = 'read_file';

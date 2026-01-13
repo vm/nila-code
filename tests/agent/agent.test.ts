@@ -2,7 +2,6 @@ import { describe, it, expect, mock, beforeEach } from 'bun:test';
 import { Agent } from '../../src/agent/agent';
 import type Anthropic from '@anthropic-ai/sdk';
 
-// Mock Anthropic client
 const mockCreate = mock(() => Promise.resolve({
   content: [{ type: 'text', text: 'Hello!' }],
   stop_reason: 'end_turn',
@@ -44,7 +43,6 @@ describe('Agent', () => {
 
   describe('Single tool call', () => {
     it('executes tool and returns final text response', async () => {
-      // First call: returns tool_use
       mockCreate.mockResolvedValueOnce({
         content: [{
           type: 'tool_use',
@@ -59,7 +57,6 @@ describe('Agent', () => {
         },
       });
 
-      // Second call: returns text after tool result
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'File contents: Hello World' }],
         stop_reason: 'end_turn',
@@ -81,7 +78,6 @@ describe('Agent', () => {
 
   describe('Multi-tool chain', () => {
     it('executes multiple tools in sequence', async () => {
-      // First call: returns read_file tool_use
       mockCreate.mockResolvedValueOnce({
         content: [{
           type: 'tool_use',
@@ -96,7 +92,6 @@ describe('Agent', () => {
         },
       });
 
-      // Second call: returns edit_file tool_use
       mockCreate.mockResolvedValueOnce({
         content: [{
           type: 'tool_use',
@@ -111,7 +106,6 @@ describe('Agent', () => {
         },
       });
 
-      // Third call: returns final text
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'File updated successfully' }],
         stop_reason: 'end_turn',
@@ -134,7 +128,6 @@ describe('Agent', () => {
 
   describe('Tool error handling', () => {
     it('handles tool errors gracefully and continues', async () => {
-      // First call: returns tool_use
       mockCreate.mockResolvedValueOnce({
         content: [{
           type: 'tool_use',
@@ -149,7 +142,6 @@ describe('Agent', () => {
         },
       });
 
-      // Second call: returns text after receiving error
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'I encountered an error reading that file' }],
         stop_reason: 'end_turn',
@@ -187,7 +179,6 @@ describe('Agent', () => {
 
       expect(mockCreate).toHaveBeenCalledTimes(2);
       
-      // Verify second call includes both messages
       const secondCall = mockCreate.mock.calls[1];
       expect(secondCall).toBeDefined();
       const messages = secondCall[0]?.messages;
@@ -214,14 +205,12 @@ describe('Agent', () => {
       expect(agent.getHistoryLength()).toBe(0);
       
       await agent.chat('Second message');
-      // After clear, should only have the new message
       expect(mockCreate).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('Sequential tool execution', () => {
     it('executes tools sequentially when parallel is disabled', async () => {
-      // First call: returns tool_use
       mockCreate.mockResolvedValueOnce({
         content: [{
           type: 'tool_use',
@@ -236,7 +225,6 @@ describe('Agent', () => {
         },
       });
 
-      // Second call: returns another tool_use
       mockCreate.mockResolvedValueOnce({
         content: [{
           type: 'tool_use',
@@ -251,7 +239,6 @@ describe('Agent', () => {
         },
       });
 
-      // Third call: returns final text
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'Done' }],
         stop_reason: 'end_turn',
@@ -304,7 +291,7 @@ describe('Agent', () => {
   describe('Response handling', () => {
     it('handles response with no text blocks (fallback)', async () => {
       mockCreate.mockResolvedValueOnce({
-        content: [], // No content blocks
+        content: [],
         stop_reason: 'end_turn',
         usage: {
           input_tokens: 10,
@@ -322,11 +309,10 @@ describe('Agent', () => {
 
   describe('Error handling', () => {
     it('handles API errors gracefully', async () => {
-      // Mock rejection for all retry attempts (default is 3)
       const apiError = new Error('API Error');
       mockCreate.mockRejectedValue(apiError);
 
-      const agent = new Agent(mockClient, { maxRetries: 1 }); // Reduce retries for faster test
+      const agent = new Agent(mockClient, { maxRetries: 1 });
       const response = await agent.chat('Test');
 
       expect(response.error).toBe('API Error');
@@ -351,7 +337,6 @@ describe('Agent', () => {
     });
 
     it('handles non-Error exceptions in API retry', async () => {
-      // Mock a non-Error exception (though unlikely, tests the fallback)
       mockCreate.mockRejectedValue('String error');
 
       const agent = new Agent(mockClient, { maxRetries: 1 });

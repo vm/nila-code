@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'bun:test';
 
-// Test Message component props and behavior
-// Since Message is a simple presentational component, we test its logic
-
 describe('Message', () => {
   it('should accept user role and content', () => {
     const role: 'user' | 'assistant' = 'user';

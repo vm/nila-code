@@ -6,7 +6,6 @@ export function listFiles(path: string): string {
     const items: string[] = [];
 
     for (const entry of entries) {
-      // Skip hidden files
       if (entry.startsWith('.')) {
         continue;
       }

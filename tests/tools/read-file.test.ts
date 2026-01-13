@@ -42,7 +42,6 @@ describe('readFile', () => {
   });
 
   it('handles directory instead of file', () => {
-    // Try to read a directory as a file
     const result = readFile(testDir);
     expect(result).toContain('Error: Failed to read file');
   });

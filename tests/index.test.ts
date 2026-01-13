@@ -1,7 +1,6 @@
 import { describe, it, expect, mock, afterEach } from 'bun:test';
 import { render } from 'ink';
 
-// Mock the dependencies
 mock.module('ink', () => ({
   render: mock(() => {}),
 }));
@@ -21,11 +20,9 @@ describe('index', () => {
       render: mockRender,
     }));
 
-    // Import the module to trigger the render call
     await import('../src/index');
 
     expect(mockRender).toHaveBeenCalledTimes(1);
-    // Check that render was called with exitOnCtrlC: true
     const [, options] = mockRender.mock.calls[0];
     expect(options).toEqual({ exitOnCtrlC: true });
   });

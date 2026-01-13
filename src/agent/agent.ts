@@ -45,23 +45,14 @@ export class Agent {
     };
   }
 
-  /**
-   * Clear the conversation history
-   */
   clearHistory(): void {
     this.conversation = [];
   }
 
-  /**
-   * Get the current conversation history length
-   */
   getHistoryLength(): number {
     return this.conversation.length;
   }
 
-  /**
-   * Execute a single tool with error handling
-   */
   private async executeToolWithErrorHandling(
     toolUse: Extract<ContentBlock, { type: 'tool_use' }>
   ): Promise<{ result: string; error: boolean }> {
@@ -79,16 +70,12 @@ export class Agent {
     }
   }
 
-  /**
-   * Execute tools in parallel when possible
-   */
   private async executeToolsParallel(
     toolUseBlocks: Extract<ContentBlock, { type: 'tool_use' }>[]
   ): Promise<ToolCall[]> {
     const toolCalls: ToolCall[] = [];
 
     if (this.options.enableParallelTools && toolUseBlocks.length > 1) {
-      // Execute all tools in parallel
       const results = await Promise.all(
         toolUseBlocks.map(toolUse => this.executeToolWithErrorHandling(toolUse))
       );
@@ -104,7 +91,6 @@ export class Agent {
         });
       }
     } else {
-      // Execute tools sequentially
       for (const toolUse of toolUseBlocks) {
         const { result, error } = await this.executeToolWithErrorHandling(toolUse);
         toolCalls.push({
@@ -119,9 +105,6 @@ export class Agent {
     return toolCalls;
   }
 
-  /**
-   * Make API call with retry logic
-   */
   private async makeApiCallWithRetry() {
     let lastError: Error | null = null;
     
@@ -138,7 +121,6 @@ export class Agent {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown API error');
         
-        // Don't retry on authentication errors or invalid requests
         if (error instanceof Error) {
           if (error.message.includes('401') || error.message.includes('403') || 
               error.message.includes('400') || error.message.includes('invalid')) {
@@ -146,7 +128,6 @@ export class Agent {
           }
         }
 
-        // Wait before retrying (exponential backoff)
         if (attempt < this.options.maxRetries - 1) {
           const delay = this.options.retryDelay * Math.pow(2, attempt);
           await sleep(delay);
@@ -158,7 +139,6 @@ export class Agent {
   }
 
   async chat(userMessage: string): Promise<AgentResponse> {
-    // Add user message to conversation
     this.conversation.push({
       role: 'user',
       content: userMessage,
@@ -168,11 +148,9 @@ export class Agent {
     let tokenUsage: { input: number; output: number } | undefined;
 
     try {
-      // Loop until we get a text response
       while (true) {
         const response = await this.makeApiCallWithRetry();
 
-        // Track token usage
         if (response.usage) {
           tokenUsage = {
             input: response.usage.input_tokens,
@@ -183,7 +161,6 @@ export class Agent {
         const content = response.content;
         const stopReason = response.stop_reason;
 
-        // Handle max_tokens stop reason
         if (stopReason === StopReason.MAX_TOKENS) {
           return {
             text: 'Response was truncated due to token limit. Please ask for a shorter response or break down your request.',
@@ -193,18 +170,15 @@ export class Agent {
           };
         }
 
-        // Check if we have tool_use blocks
         const toolUseBlocks = content.filter(
           (block): block is Extract<ContentBlock, { type: 'tool_use' }> =>
             block.type === ContentBlockType.TOOL_USE
         );
 
         if (toolUseBlocks.length > 0) {
-          // Execute tools (parallel or sequential)
           const executedToolCalls = await this.executeToolsParallel(toolUseBlocks);
           toolCalls.push(...executedToolCalls);
 
-          // Prepare tool results
           const toolResults: ToolResultBlockParam[] = toolUseBlocks.map((toolUse, idx) => ({
             type: 'tool_result',
             tool_use_id: toolUse.id,
@@ -212,23 +186,19 @@ export class Agent {
             is_error: executedToolCalls[idx].error,
           }));
 
-          // Add assistant message with tool_use blocks
           this.conversation.push({
             role: 'assistant',
             content: toolUseBlocks,
           });
 
-          // Add user message with tool_results (required by Anthropic API)
           this.conversation.push({
             role: 'user',
             content: toolResults,
           });
 
-          // Continue loop to get next response
           continue;
         }
 
-        // We have a text response
         const textBlocks = content.filter(
           (block): block is Extract<ContentBlock, { type: 'text' }> =>
             block.type === ContentBlockType.TEXT
@@ -237,7 +207,6 @@ export class Agent {
         if (textBlocks.length > 0) {
           const text = textBlocks.map(block => block.text).join('\n');
 
-          // Add assistant message to conversation
           this.conversation.push({
             role: 'assistant',
             content: text,
@@ -250,7 +219,6 @@ export class Agent {
           };
         }
 
-        // Fallback: if no text blocks, return empty response
         return {
           text: '',
           toolCalls,

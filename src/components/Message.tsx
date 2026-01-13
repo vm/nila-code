@@ -20,7 +20,6 @@ export function Message({ role, content }: Props) {
     );
   }
   
-  // Assistant message - can be multiline with formatting
   return (
     <Box flexDirection="column">
       <FormattedText content={content} />

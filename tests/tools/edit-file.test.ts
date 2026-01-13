@@ -87,7 +87,6 @@ describe('editFile', () => {
   });
 
   it('handles file creation with special characters in path', () => {
-    // Test with a path that might cause issues but still be valid
     const specialPath = join(testDir, 'special chars file.txt');
     
     const result = editFile(specialPath, '', 'content');

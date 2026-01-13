@@ -4,7 +4,6 @@ import { runCommand } from './run-command';
 import { listFiles } from './list-files';
 import { ToolName } from '../agent/types';
 
-// Tool definitions for Claude API
 export const tools = [
   {
     name: ToolName.READ_FILE,

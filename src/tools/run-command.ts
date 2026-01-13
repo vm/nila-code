@@ -1,9 +1,5 @@
 import { spawnSync } from 'bun';
 
-/**
- * Parse a shell command string into command and arguments, respecting quotes.
- * Handles both single and double quotes, and escaped quotes.
- */
 function parseCommand(command: string): string[] {
   const parts: string[] = [];
   let current = '';
@@ -16,7 +12,6 @@ function parseCommand(command: string): string[] {
     const nextChar = command[i + 1];
 
     if (char === '\\' && (inSingleQuote || inDoubleQuote || nextChar === '"' || nextChar === "'")) {
-      // Handle escaped characters
       if (nextChar) {
         current += nextChar;
         i += 2;
@@ -37,7 +32,6 @@ function parseCommand(command: string): string[] {
     }
 
     if ((char === ' ' || char === '\t') && !inSingleQuote && !inDoubleQuote) {
-      // Whitespace outside quotes - end current argument
       if (current.length > 0) {
         parts.push(current);
         current = '';
@@ -50,7 +44,6 @@ function parseCommand(command: string): string[] {
     i++;
   }
 
-  // Add the last argument if there is one
   if (current.length > 0) {
     parts.push(current);
   }
@@ -60,7 +53,6 @@ function parseCommand(command: string): string[] {
 
 export function runCommand(command: string): string {
   try {
-    // Parse command and arguments, respecting quotes
     const parts = parseCommand(command.trim());
     
     if (parts.length === 0) {
@@ -76,7 +68,6 @@ export function runCommand(command: string): string {
       stderr: 'pipe',
     });
 
-    // Combine stdout and stderr
     const stdout = result.stdout?.toString() || '';
     const stderr = result.stderr?.toString() || '';
     const combined = (stdout + stderr).trim();

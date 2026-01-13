@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import type { AgentResponse } from '../../src/agent/types';
 
-// Test App component logic without full Ink rendering
-// Since App uses Ink hooks and Agent, we'll test the component's behavior conceptually
-
 describe('App', () => {
 
   it('should handle agent responses', async () => {
@@ -40,12 +37,10 @@ describe('App', () => {
   it('should manage message state', () => {
     const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
     
-    // Simulate adding a user message
     messages.push({ role: 'user', content: 'Hello' });
     expect(messages.length).toBe(1);
     expect(messages[0].role).toBe('user');
     
-    // Simulate adding an assistant message
     messages.push({ role: 'assistant', content: 'Hi there!' });
     expect(messages.length).toBe(2);
     expect(messages[1].role).toBe('assistant');
@@ -80,7 +75,6 @@ describe('App', () => {
       { name: 'read_file', input: { file_path: 'test.txt' }, result: 'Content' },
     ];
 
-    // Simulate grouping logic
     const grouped = new Map<string, { toolCall: typeof toolCalls[0]; count: number }>();
     
     for (const toolCall of toolCalls) {
@@ -194,7 +188,7 @@ describe('App', () => {
       
       if (grouped.has(key)) {
         grouped.get(key)!.count++;
-        grouped.get(key)!.toolCall = toolCall; // Use latest
+        grouped.get(key)!.toolCall = toolCall;
       } else {
         grouped.set(key, { toolCall, count: 1 });
       }
