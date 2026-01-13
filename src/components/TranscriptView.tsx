@@ -211,7 +211,39 @@ function parseToolResultLines(text: string, toolName: string, width: number, inp
     const commandText = command || 'command';
     const truncatedCommand = commandText.length > 50 ? commandText.slice(0, 47) + '…' : commandText;
     const title = `run command: ${truncatedCommand}`;
-    return renderCodeBlock(title, text, width, 'gray', false);
+    
+    const headerWidth = Math.min(60, width);
+    const titlePart = `── ${title} `;
+    const remainingWidth = Math.max(0, headerWidth - titlePart.length);
+    const headerLine = titlePart + '─'.repeat(remainingWidth);
+    const lines: Line[] = [];
+    lines.push({ text: headerLine, color: 'gray', dimColor: true });
+    
+    const borderWidth = Math.min(width, headerWidth);
+    const commandPrefix = '│ $ ';
+    const commandMaxWidth = borderWidth - commandPrefix.length;
+    const wrappedCommand = wrapLine(commandText, commandMaxWidth);
+    for (const w of wrappedCommand) {
+      lines.push({ text: `${commandPrefix}${w}`, color: 'yellow', dimColor: false });
+    }
+    
+    const contentLines = splitLines(text);
+    if (contentLines.length === 0 || (contentLines.length === 1 && contentLines[0] === '')) {
+      lines.push({ text: '│', color: 'gray', dimColor: true });
+    } else {
+      for (const logicalLine of contentLines) {
+        const wrapped = wrapLine(logicalLine, borderWidth - 2);
+        for (const w of wrapped) {
+          const borderedLine = `│ ${w}`;
+          lines.push({ text: borderedLine, color: 'gray', dimColor: false });
+        }
+      }
+    }
+    
+    const footerLine = '─'.repeat(borderWidth);
+    lines.push({ text: footerLine, color: 'gray', dimColor: true });
+    
+    return lines;
   } else {
     for (const logicalLine of logicalLines) {
       const wrapped = wrapLine(logicalLine, width);

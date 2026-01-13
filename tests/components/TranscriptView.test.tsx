@@ -414,6 +414,7 @@ describe('TranscriptView', () => {
 
       const output = lastFrame();
       expect(output).toContain('── run command: bun test');
+      expect(output).toContain('│ $ bun test');
       expect(output).toContain('│ Running tests...');
       expect(output).toContain('│ All tests passed');
       expect(output).toMatch(/─+/);
