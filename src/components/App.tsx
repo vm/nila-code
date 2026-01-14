@@ -6,6 +6,11 @@ import { MessageRole, ToolCallStatus } from '../shared/types';
 import { splitForToolCalls } from '../shared/transcript';
 import { TranscriptView } from './TranscriptView';
 import { cwd } from 'node:process';
+import { join } from 'node:path';
+import { discoverCommands } from '../commands/discovery';
+import { parseInput } from '../commands/parser';
+import { isBuiltinCommand, executeBuiltinHelp } from '../commands/builtins';
+import type { Command } from '../commands/types';
 
 type MessageItem = {
   role: MessageRole;
@@ -26,6 +31,7 @@ export function App() {
   const { stdout } = useStdout();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [toolCalls, setToolCalls] = useState<ToolCallItem[]>([]);
+  const [commands, setCommands] = useState<Command[]>([]);
 
   const [agent] = useState(() => {
     return new Agent(undefined, {
@@ -56,6 +62,12 @@ export function App() {
   }, [exit]);
 
   useEffect(() => {
+    const commandsPath = join(cwd(), '.nila', 'commands');
+    const discovered = discoverCommands(commandsPath);
+    setCommands(discovered);
+  }, []);
+
+  useEffect(() => {
     const updateSize = () => {
       setTerminalHeight(stdout.rows || 24);
       setTerminalWidth(stdout.columns || 80);
@@ -66,6 +78,21 @@ export function App() {
   }, [stdout]);
 
   const handleSubmit = async (text: string) => {
+    const parsed = parseInput(text);
+    
+    if (parsed.type === 'command') {
+      const { name } = parsed.invocation;
+      
+      if (isBuiltinCommand(name)) {
+        if (name === 'help') {
+          const helpText = executeBuiltinHelp(commands);
+          setMessages(prev => [...prev, { role: MessageRole.USER, content: text }]);
+          setMessages(prev => [...prev, { role: MessageRole.ASSISTANT, content: helpText }]);
+          return;
+        }
+      }
+    }
+
     setMessages(prev => [...prev, { role: MessageRole.USER, content: text }]);
     setScrollOffset(0);
     setIsLoading(true);
