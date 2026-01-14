@@ -28,4 +28,6 @@ export type TranscriptLine = {
   dimColor?: boolean;
 };
 
+export type { Command, CommandInvocation, ParsedInput } from '../commands/types';
+
 
