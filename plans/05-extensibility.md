@@ -84,17 +84,17 @@ The simplest form of extensibility. Commands are markdown files that get loaded 
 
 Unit tests for command parsing and loading (similar pattern to `tests/tools/read-file.test.ts`):
 
-- [ ] `parseCommandInput` extracts command name from `/makepr`
-- [ ] `parseCommandInput` extracts args from `/makepr fix auth bug`
-- [ ] `parseCommandInput` returns null for input without `/` prefix
-- [ ] `parseCommandInput` returns null for `/` alone
-- [ ] `parseCommandInput` handles command with no args
-- [ ] `loadCommand` returns file content when command exists
-- [ ] `loadCommand` returns null when command file missing
-- [ ] `loadCommand` handles missing `.nila/commands/` directory
-- [ ] `listCommands` returns all `.md` files in commands directory
-- [ ] `listCommands` extracts description from first line of each file
-- [ ] `listCommands` returns empty array when no commands exist
+- [x] `parseCommandInput` extracts command name from `/makepr`
+- [x] `parseCommandInput` extracts args from `/makepr fix auth bug`
+- [x] `parseCommandInput` returns null for input without `/` prefix
+- [x] `parseCommandInput` returns null for `/` alone
+- [x] `parseCommandInput` handles command with no args
+- [x] `loadCommand` returns file content when command exists
+- [x] `loadCommand` returns null when command file missing
+- [x] `loadCommand` handles missing `.nila/commands/` directory
+- [x] `listCommands` returns all `.md` files in commands directory
+- [x] `listCommands` extracts description from first line of each file
+- [x] `listCommands` returns empty array when no commands exist
 
 **File**: `tests/commands/integration.test.ts`
 
@@ -105,21 +105,21 @@ Integration tests with temp directory fixtures:
 
 ### Implementation checklist
 
-- [ ] **1) Create types**
+- [x] **1) Create types**
   - Add `src/commands/types.ts` with `CommandEntry`, `ParsedCommand`
 
-- [ ] **2) Implement `parseCommandInput`**
+- [x] **2) Implement `parseCommandInput`**
   - Detect `/` prefix in user input
   - Extract command name (first word after `/`)
   - Extract args (everything after command name)
   - Return null for edge cases
 
-- [ ] **3) Implement `loadCommand`**
+- [x] **3) Implement `loadCommand`**
   - Read `.nila/commands/{name}.md` from cwd
   - Return null if file doesn't exist
   - Handle missing directory gracefully
 
-- [ ] **4) Implement `listCommands`**
+- [x] **4) Implement `listCommands`**
   - List all `.md` files in commands directory
   - Extract description from first non-empty line
   - Return `CommandEntry[]`
@@ -423,7 +423,7 @@ Unit tests for scope handling:
 
 ### Phase 1 (Commands)
 
-- [ ] All `tests/commands/loader.test.ts` tests pass
+- [x] All `tests/commands/loader.test.ts` tests pass (17 tests)
 - [ ] All `tests/commands/integration.test.ts` tests pass
 - [ ] `/command-name` loads and executes command
 - [ ] Arguments passed as raw string
