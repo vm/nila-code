@@ -50,12 +50,12 @@ Define the core types and parsing logic for commands.
 
 ### Implementation checklist
 
-- [ ] **1.1) Define Command type**
-- [ ] **1.2) Define CommandInvocation type**
-- [ ] **1.3) Define ParsedInput discriminated union**
-- [ ] **1.4) Write parser tests**
-- [ ] **1.5) Implement parseInput**
-- [ ] **1.6) Implement parseCommandLine**
+- [x] **1.1) Define Command type**
+- [x] **1.2) Define CommandInvocation type**
+- [x] **1.3) Define ParsedInput discriminated union**
+- [x] **1.4) Write parser tests**
+- [x] **1.5) Implement parseInput**
+- [x] **1.6) Implement parseCommandLine**
 
 ---
 
@@ -425,9 +425,9 @@ Phases 1-4 form MVP for commands. Phases 5-6 add skills. Phases 7-9 are progress
 ## Definition of done
 
 ### Phase 1 (Types & Parsing)
-- [ ] All types defined and exported
-- [ ] Parser handles all edge cases
-- [ ] Tests pass
+- [x] All types defined and exported
+- [x] Parser handles all edge cases
+- [x] Tests pass
 
 ### Phase 2 (Discovery)
 - [ ] Commands discovered from `.nila/commands/`
