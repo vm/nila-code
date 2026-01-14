@@ -100,8 +100,8 @@ Unit tests for command parsing and loading (similar pattern to `tests/tools/read
 
 Integration tests with temp directory fixtures:
 
-- [ ] Full flow: parse input → load command → format message
-- [ ] `/help` returns formatted list of commands
+- [x] Full flow: parse input → load command → format message
+- [x] `/help` returns formatted list of commands
 
 ### Implementation checklist
 
@@ -124,13 +124,13 @@ Integration tests with temp directory fixtures:
   - Extract description from first non-empty line
   - Return `CommandEntry[]`
 
-- [ ] **5) Integrate into App.tsx**
+- [x] **5) Integrate into App.tsx**
   - Before calling `agent.chat()`, check for command
   - If command found, prepend its content to user message
   - Format: `{command content}\n\n---\n\nUser request: {args}`
   - If command not found, show error in transcript
 
-- [ ] **6) Add `/help` built-in**
+- [x] **6) Add `/help` built-in**
   - Special case in App.tsx (not a file-based command)
   - Call `listCommands()` and format output
 
@@ -424,11 +424,11 @@ Unit tests for scope handling:
 ### Phase 1 (Commands)
 
 - [x] All `tests/commands/loader.test.ts` tests pass (17 tests)
-- [ ] All `tests/commands/integration.test.ts` tests pass
-- [ ] `/command-name` loads and executes command
-- [ ] Arguments passed as raw string
-- [ ] `/help` lists available commands
-- [ ] Unknown commands show clear error
+- [x] All `tests/commands/integration.test.ts` tests pass (4 tests)
+- [x] `/command-name` loads and executes command
+- [x] Arguments passed as raw string
+- [x] `/help` lists available commands
+- [x] Unknown commands show clear error
 
 ### Phase 2 (Skills)
 

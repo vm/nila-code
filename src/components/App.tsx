@@ -6,6 +6,7 @@ import { MessageRole, ToolCallStatus } from '../shared/types';
 import { splitForToolCalls } from '../shared/transcript';
 import { TranscriptView } from './TranscriptView';
 import { cwd } from 'node:process';
+import { parseCommandInput, loadCommand, listCommands } from '../commands/loader';
 
 type MessageItem = {
   role: MessageRole;
@@ -82,6 +83,67 @@ export function App() {
   }, [stdout]);
 
   const handleSubmit = async (text: string) => {
+    const workingDir = cwd();
+    const parsedCommand = parseCommandInput(text);
+
+    if (parsedCommand) {
+      if (parsedCommand.command === 'help') {
+        const commands = listCommands(workingDir);
+        const helpText =
+          commands.length > 0
+            ? commands
+                .map((cmd) => `/${cmd.name} - ${cmd.description}`)
+                .join('\n')
+            : 'No commands available. Create commands in `.nila/commands/*.md`';
+
+        setMessages((prev) => [
+          ...prev,
+          { role: MessageRole.USER, content: text },
+          { role: MessageRole.ASSISTANT, content: helpText },
+        ]);
+        setScrollOffset(0);
+        return;
+      }
+
+      const commandContent = loadCommand(parsedCommand.command, workingDir);
+      if (commandContent === null) {
+        setMessages((prev) => [
+          ...prev,
+          { role: MessageRole.USER, content: text },
+        ]);
+        setError(`Command not found: /${parsedCommand.command}`);
+        setScrollOffset(0);
+        return;
+      }
+
+      const formattedMessage = `${commandContent}\n\n---\n\nUser request: ${parsedCommand.args}`;
+      setMessages((prev) => [
+        ...prev,
+        { role: MessageRole.USER, content: text },
+      ]);
+      setScrollOffset(0);
+      setIsLoading(true);
+      setThinkingStartTime(Date.now());
+      setError(null);
+      setToolCalls([]);
+
+      try {
+        const response = await agent.chat(formattedMessage);
+        setMessages((prev) => [
+          ...prev,
+          { role: MessageRole.ASSISTANT, content: response.text },
+        ]);
+        if (response.error) setError(response.error);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage);
+      } finally {
+        setIsLoading(false);
+        setThinkingStartTime(null);
+      }
+      return;
+    }
+
     setMessages((prev) => [...prev, { role: MessageRole.USER, content: text }]);
     setScrollOffset(0);
     setIsLoading(true);
