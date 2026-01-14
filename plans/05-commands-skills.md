@@ -89,10 +89,10 @@ Scan `.nila/commands/` directory at startup to discover available commands.
 
 ### Implementation checklist
 
-- [ ] **2.1) Write discovery tests with mock filesystem**
-- [ ] **2.2) Implement extractDescription**
-- [ ] **2.3) Implement loadCommand**
-- [ ] **2.4) Implement discoverCommands**
+- [x] **2.1) Write discovery tests with mock filesystem**
+- [x] **2.2) Implement extractDescription**
+- [x] **2.3) Implement loadCommand**
+- [x] **2.4) Implement discoverCommands**
 
 ---
 
@@ -430,9 +430,9 @@ Phases 1-4 form MVP for commands. Phases 5-6 add skills. Phases 7-9 are progress
 - [x] Tests pass
 
 ### Phase 2 (Discovery)
-- [ ] Commands discovered from `.nila/commands/`
-- [ ] Missing directory handled gracefully
-- [ ] Tests pass with mock filesystem
+- [x] Commands discovered from `.nila/commands/`
+- [x] Missing directory handled gracefully
+- [x] Tests pass with mock filesystem
 
 ### Phase 3 (/help)
 - [ ] `/help` lists available commands
