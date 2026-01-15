@@ -1,3 +1,5 @@
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { dirname } from 'node:path';
 import type { Command } from '../commands/types';
 import type { Skill } from '../skills/types';
 import type { Registry, RegistryEntry } from './types';
@@ -24,7 +26,13 @@ export function buildRegistry(commands: Command[], skills: Skill[]): Registry {
 }
 
 export function saveRegistry(registry: Registry, cachePath: string): void {
-  throw new Error('Not implemented');
+  const dir = dirname(cachePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+  
+  const json = JSON.stringify(registry, null, 2);
+  writeFileSync(cachePath, json, 'utf-8');
 }
 
 export function loadRegistry(cachePath: string): Registry | null {
