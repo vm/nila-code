@@ -281,13 +281,17 @@ function parseToolResultLines(
   return lines;
 }
 
-function formatToolCallHeaderColored(tc: ToolCallItem): TranscriptLine {
+function formatToolCallHeaderColored(
+  tc: ToolCallItem,
+  collapsed: boolean
+): TranscriptLine {
   const name = formatToolCallName(tc.name);
   const target = formatToolCallTarget(tc.name, tc.input);
   const status = toolStatusLabel(tc.status);
   const statusColor = toolStatusColor(tc.status);
 
-  let headerText = name;
+  const indicator = collapsed ? '▶' : '▼';
+  let headerText = `${indicator} ${name}`;
   if (target) {
     headerText += `: ${target}`;
   }
@@ -303,6 +307,7 @@ function buildTranscriptLines(params: {
   thinkingElapsedSeconds: number | null;
   error: string | null;
   width: number;
+  collapsed: boolean;
 }): TranscriptLine[] {
   const {
     messages,
@@ -311,6 +316,7 @@ function buildTranscriptLines(params: {
     thinkingElapsedSeconds,
     error,
     width,
+    collapsed,
   } = params;
   const lines: TranscriptLine[] = [];
 
@@ -339,9 +345,9 @@ function buildTranscriptLines(params: {
   }
 
   for (const tc of toolCalls) {
-    const header = formatToolCallHeaderColored(tc);
+    const header = formatToolCallHeaderColored(tc, collapsed);
     lines.push(header);
-    if (tc.result !== undefined && tc.result !== null) {
+    if (!collapsed && tc.result !== undefined && tc.result !== null) {
       const truncated = truncateToolResult(tc.name, tc.result, tc.input);
       const resultLines = parseToolResultLines(
         truncated,
@@ -374,6 +380,7 @@ export function TranscriptView(props: {
   width: number;
   height: number;
   scrollOffset?: number;
+  collapsed: boolean;
 }) {
   const width = Math.max(1, props.width);
   const height = Math.max(1, props.height);
@@ -390,6 +397,7 @@ export function TranscriptView(props: {
     thinkingElapsedSeconds,
     error: props.error,
     width,
+    collapsed: props.collapsed,
   });
 
   if (props.afterAssistant) {
@@ -400,6 +408,7 @@ export function TranscriptView(props: {
       thinkingElapsedSeconds: null,
       error: null,
       width,
+      collapsed: props.collapsed,
     });
     allLines.push(...assistantLines);
   }
