@@ -24,6 +24,12 @@ export enum FormattedTextPartType {
   INLINE_CODE = 'inlineCode',
 }
 
+export type FormattedTextPart = {
+  type: FormattedTextPartType;
+  content: string;
+  color?: string;
+};
+
 export type TranscriptLine = {
   text: string;
   color?: string;
