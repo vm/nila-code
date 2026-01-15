@@ -22,6 +22,8 @@ export enum FormattedTextPartType {
   ITALIC = 'italic',
   CODE = 'code',
   INLINE_CODE = 'inlineCode',
+  STRIKETHROUGH = 'strikethrough',
+  UNDERLINE = 'underline',
 }
 
 export type FormattedTextPart = {
