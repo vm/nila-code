@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import { Agent } from '../agent/agent';
 import { Input } from './Input';
@@ -6,50 +6,43 @@ import { MessageRole, ToolCallStatus } from '../shared/types';
 import { splitForToolCalls } from '../shared/transcript';
 import { TranscriptView } from './TranscriptView';
 import { cwd } from 'node:process';
+import {
+  useSessionStore,
+  getDefaultStore,
+  persistSession,
+  type SessionStore,
+} from '../stores/session';
 
-type MessageItem = {
-  role: MessageRole;
-  content: string;
+type AppProps = {
+  store?: SessionStore;
 };
 
-type ToolCallItem = {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-  status: ToolCallStatus;
-  result?: string;
-  error?: boolean;
-};
-
-export function App() {
+export function App({ store: injectedStore }: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
-  const [messages, setMessages] = useState<MessageItem[]>([]);
-  const [toolCalls, setToolCalls] = useState<ToolCallItem[]>([]);
+
+  const store = injectedStore ?? getDefaultStore();
+  const messages = useSessionStore((s) => s.messages);
+  const toolCalls = useSessionStore((s) => s.toolCalls);
+  const conversation = useSessionStore((s) => s.conversation);
 
   const [agent] = useState(() => {
-    return new Agent(undefined, {
+    const created = new Agent(undefined, {
       onToolStart: (id, name, input) => {
-        setToolCalls((prev) => [
-          ...prev,
-          { id, name, input, status: ToolCallStatus.RUNNING },
-        ]);
+        store.getState().addToolCall({ id, name, input });
       },
       onToolComplete: (id, _name, _input, result, error) => {
-        setToolCalls((prev) =>
-          prev.map((tc) =>
-            tc.id === id
-              ? {
-                  ...tc,
-                  status: error ? ToolCallStatus.ERROR : ToolCallStatus.DONE,
-                  result,
-                  error,
-                }
-              : tc
-          )
-        );
+        store.getState().updateToolCall(id, {
+          status: error ? ToolCallStatus.ERROR : ToolCallStatus.DONE,
+          result,
+          error,
+        });
       },
     });
+    if (conversation.length > 0) {
+      created.restoreConversation(conversation);
+    }
+    return created;
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -82,21 +75,26 @@ export function App() {
     };
   }, [stdout]);
 
+  useEffect(() => {
+    store.getState().setModel(agent.getModel());
+  }, [agent, store]);
+
   const handleSubmit = async (text: string) => {
-    setMessages((prev) => [...prev, { role: MessageRole.USER, content: text }]);
+    store.getState().addMessage({ role: MessageRole.USER, content: text });
     setScrollOffset(0);
     setIsLoading(true);
     setThinkingStartTime(Date.now());
     setError(null);
-    setToolCalls([]);
+    store.getState().clearToolCalls();
 
     try {
       const response = await agent.chat(text);
-      setMessages((prev) => [
-        ...prev,
-        { role: MessageRole.ASSISTANT, content: response.text },
-      ]);
+      store
+        .getState()
+        .addMessage({ role: MessageRole.ASSISTANT, content: response.text });
+      store.getState().setConversation(agent.getConversation());
       if (response.error) setError(response.error);
+      persistSession();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
@@ -163,6 +161,12 @@ export function App() {
       return;
     }
   });
+
+  useEffect(() => {
+    return () => {
+      persistSession();
+    };
+  }, []);
 
   return (
     <Box flexDirection="column" height={terminalHeight}>
