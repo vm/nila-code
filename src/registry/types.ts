@@ -1,6 +1,8 @@
+export type RegistryEntryType = 'command' | 'skill';
+
 export type RegistryEntry = {
   name: string;
-  type: 'command' | 'skill';
+  type: RegistryEntryType;
   description: string;
   path: string;
 };
