@@ -24,79 +24,67 @@ function parseToolArguments(raw: string | undefined): Record<string, unknown> {
   }
 }
 
-function getLatestTurn(conversation: Message[]): Message[] {
-  for (let i = conversation.length - 1; i >= 0; i--) {
-    if (conversation[i]?.role === 'user') {
-      return conversation.slice(i + 1);
-    }
-  }
-  return conversation;
-}
-
-function collectToolResults(turn: Message[]): Map<string, ToolCallResult> {
-  const results = new Map<string, ToolCallResult>();
-  for (const msg of turn) {
-    if (msg.role !== 'tool') continue;
-    if (!msg.tool_call_id) continue;
-    if (typeof msg.content !== 'string') continue;
-    const result = msg.content;
-    results.set(msg.tool_call_id, {
-      result,
-      error: result.startsWith('Error:'),
-    });
-  }
-  return results;
-}
-
-function collectToolCalls(
-  turn: Message[],
-  results: Map<string, ToolCallResult>
-): ToolCallItem[] {
-  const toolCalls: ToolCallItem[] = [];
-  for (const msg of turn) {
-    if (msg.role !== 'assistant') continue;
-    if (!Array.isArray(msg.content)) continue;
-    for (const tc of msg.content) {
-      const result = results.get(tc.id);
-      const status = result
-        ? result.error
-          ? ToolCallStatus.ERROR
-          : ToolCallStatus.DONE
-        : ToolCallStatus.RUNNING;
-      toolCalls.push({
-        id: tc.id,
-        name: tc.function.name,
-        input: parseToolArguments(tc.function.arguments),
-        status,
-        result: result?.result,
-        error: result?.error,
-      });
-    }
-  }
-  return toolCalls;
-}
-
-function collectMessages(conversation: Message[]): MessageItem[] {
-  const messages: MessageItem[] = [];
-  for (const msg of conversation) {
-    if (msg.role === 'user' && typeof msg.content === 'string') {
-      messages.push({ role: MessageRole.USER, content: msg.content });
-    }
-    if (msg.role === 'assistant' && typeof msg.content === 'string') {
-      messages.push({ role: MessageRole.ASSISTANT, content: msg.content });
-    }
-  }
-  return messages;
-}
-
 export function deriveTranscript(conversation: Message[]): {
   messages: MessageItem[];
   toolCalls: ToolCallItem[];
 } {
-  const messages = collectMessages(conversation);
-  const turn = getLatestTurn(conversation);
-  const results = collectToolResults(turn);
-  const toolCalls = collectToolCalls(turn, results);
+  const messages: MessageItem[] = [];
+  const toolCalls: ToolCallItem[] = [];
+  const results = new Map<string, ToolCallResult>();
+
+  for (const msg of conversation) {
+    if (msg.role === 'user' && typeof msg.content === 'string') {
+      messages.push({ role: MessageRole.USER, content: msg.content });
+      toolCalls.length = 0;
+      results.clear();
+      continue;
+    }
+
+    if (msg.role === 'assistant') {
+      if (typeof msg.content === 'string') {
+        messages.push({ role: MessageRole.ASSISTANT, content: msg.content });
+        continue;
+      }
+      if (!Array.isArray(msg.content)) continue;
+      for (const tc of msg.content) {
+        const result = results.get(tc.id);
+        const status = result
+          ? result.error
+            ? ToolCallStatus.ERROR
+            : ToolCallStatus.DONE
+          : ToolCallStatus.RUNNING;
+        toolCalls.push({
+          id: tc.id,
+          name: tc.function.name,
+          input: parseToolArguments(tc.function.arguments),
+          status,
+          result: result?.result,
+          error: result?.error,
+        });
+      }
+      continue;
+    }
+
+    if (msg.role !== 'tool') continue;
+    if (!msg.tool_call_id) continue;
+    if (typeof msg.content !== 'string') continue;
+    const result = {
+      result: msg.content,
+      error: msg.content.startsWith('Error:'),
+    };
+    results.set(msg.tool_call_id, result);
+    for (let i = 0; i < toolCalls.length; i++) {
+      if (toolCalls[i]?.id !== msg.tool_call_id) continue;
+      toolCalls[i] = {
+        ...toolCalls[i],
+        status: result.error ? ToolCallStatus.ERROR : ToolCallStatus.DONE,
+        result: result.result,
+        error: result.error,
+      };
+      break;
+    }
+  }
+
   return { messages, toolCalls };
 }
 

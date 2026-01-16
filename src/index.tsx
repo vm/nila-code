@@ -23,8 +23,9 @@ const wantsResume = resumeArg !== undefined;
 let runId: string;
 
 if (wantsResume) {
-  const isLatest = resumeArg === true || resumeArg === '';
-  const selectedRunId = isLatest ? findLatestRunId() : resumeArg;
+  const resumeValue = typeof resumeArg === 'string' ? resumeArg : '';
+  const isLatest = resumeValue === '';
+  const selectedRunId = isLatest ? findLatestRunId() : resumeValue;
 
   if (!selectedRunId) {
     console.error('No saved sessions found to resume.');

@@ -10,12 +10,23 @@ import {
   getDefaultStore,
   type SessionStore,
 } from '../stores/session';
+import type { AgentOptions, AgentResponse, Message } from '../agent/types';
+
+export type AppAgent = {
+  getModel: () => string;
+  getConversation: () => Message[];
+  restoreConversation: (messages: Message[]) => void;
+  chat: (userMessage: string) => Promise<AgentResponse>;
+};
+
+export type AppAgentFactory = (options: AgentOptions) => AppAgent;
 
 type AppProps = {
   store?: SessionStore;
+  agentFactory?: AppAgentFactory;
 };
 
-export function App({ store: injectedStore }: AppProps) {
+export function App({ store: injectedStore, agentFactory }: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
 
@@ -27,7 +38,8 @@ export function App({ store: injectedStore }: AppProps) {
   );
 
   const [agent] = useState(() => {
-    const created = new Agent(undefined, {
+    const factory = agentFactory ?? ((options: AgentOptions) => new Agent(undefined, options));
+    const created = factory({
       onToolStart: () => {
         store.getState().setConversation(created.getConversation());
       },

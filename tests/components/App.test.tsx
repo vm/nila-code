@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { render } from 'ink-testing-library';
-import { App } from '../../src/components/App';
+import { App, type AppAgentFactory } from '../../src/components/App';
 import {
   createSessionStore,
   initializeDefaultStore,
@@ -9,9 +9,28 @@ import {
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { Message } from '../../src/agent/types';
 
 describe('App', () => {
   let testDir: string;
+  const createTestAgentFactory = (): AppAgentFactory => (options) => {
+    let conversation: Message[] = [];
+    return {
+      getModel: () => 'test-model',
+      getConversation: () => [...conversation],
+      restoreConversation: (messages) => {
+        conversation = [...messages];
+      },
+      chat: async (userMessage) => {
+        conversation = [...conversation, { role: 'user', content: userMessage }];
+        if (conversation.length > 1) {
+          options.onToolStart?.('tool_1', 'read_file', {});
+          options.onToolComplete?.('tool_1', 'read_file', {}, 'ok', false);
+        }
+        return { text: '', toolCalls: [] };
+      },
+    };
+  };
 
   beforeEach(() => {
     testDir = mkdtempSync(join(tmpdir(), 'app-test-'));
@@ -25,7 +44,9 @@ describe('App', () => {
 
   it('renders banner when no messages', () => {
     const store = createSessionStore();
-    const { lastFrame } = render(<App store={store} />);
+    const { lastFrame } = render(
+      <App store={store} agentFactory={createTestAgentFactory()} />
+    );
 
     const output = lastFrame() ?? '';
     expect(output).toContain('███╗   ██╗');
@@ -33,7 +54,9 @@ describe('App', () => {
 
   it('renders input component', () => {
     const store = createSessionStore();
-    const { lastFrame } = render(<App store={store} />);
+    const { lastFrame } = render(
+      <App store={store} agentFactory={createTestAgentFactory()} />
+    );
 
     const output = lastFrame() ?? '';
     expect(output).toContain('›');
@@ -47,7 +70,9 @@ describe('App', () => {
       },
     });
 
-    const { lastFrame, unmount } = render(<App store={store} />);
+    const { lastFrame, unmount } = render(
+      <App store={store} agentFactory={createTestAgentFactory()} />
+    );
 
     const output = lastFrame() ?? '';
     expect(output).toContain('Hello from store');
@@ -67,7 +92,9 @@ describe('App', () => {
       baseDir: testDir,
     });
 
-    const { lastFrame, unmount } = render(<App />);
+    const { lastFrame, unmount } = render(
+      <App agentFactory={createTestAgentFactory()} />
+    );
 
     const output = lastFrame() ?? '';
     expect(output).toContain('Default store message');

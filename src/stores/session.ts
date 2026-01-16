@@ -31,6 +31,14 @@ export type SessionState = SessionData & {
 
 export type SessionStore = ReturnType<typeof createSessionStore>;
 
+type RawSessionData = {
+  runId?: unknown;
+  createdAt?: unknown;
+  workingDir?: unknown;
+  model?: unknown;
+  conversation?: unknown;
+};
+
 type StorageOptions = {
   baseDir?: string;
 };
@@ -94,6 +102,34 @@ const createInitialState = (): SessionData => ({
   model: '',
   conversation: [],
 });
+
+function isMessage(value: unknown): value is Message {
+  if (!value || typeof value !== 'object') return false;
+  const role = (value as { role?: unknown }).role;
+  return typeof role === 'string';
+}
+
+function normalizeSessionData(raw: unknown): SessionData | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as RawSessionData;
+  const runId = typeof data.runId === 'string' ? data.runId : null;
+  if (!runId) return null;
+  const createdAt =
+    typeof data.createdAt === 'number' ? data.createdAt : Date.now();
+  const workingDir =
+    typeof data.workingDir === 'string' ? data.workingDir : process.cwd();
+  const model = typeof data.model === 'string' ? data.model : '';
+  const conversation = Array.isArray(data.conversation)
+    ? data.conversation.filter(isMessage)
+    : [];
+  return {
+    runId,
+    createdAt,
+    workingDir,
+    model,
+    conversation,
+  };
+}
 
 export type CreateSessionStoreOptions = {
   initialState?: Partial<SessionData>;
@@ -193,15 +229,12 @@ export function loadSessionData(
   if (!existsSync(sessionPath)) return null;
   try {
     const content = readFileSync(sessionPath, 'utf-8');
-    const parsed = JSON.parse(content) as { state?: SessionData };
-    if (parsed.state && typeof parsed.state.runId === 'string') {
-      return parsed.state;
+    const parsed = JSON.parse(content) as { state?: unknown };
+    if (parsed.state) {
+      const normalized = normalizeSessionData(parsed.state);
+      if (normalized) return normalized;
     }
-    const legacyData = parsed as unknown as SessionData;
-    if (legacyData && typeof legacyData.runId === 'string') {
-      return legacyData;
-    }
-    return null;
+    return normalizeSessionData(parsed);
   } catch {
     return null;
   }

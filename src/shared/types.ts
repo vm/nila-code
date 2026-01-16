@@ -18,6 +18,8 @@ export enum ToolName {
 
 export enum FormattedTextPartType {
   TEXT = 'text',
+  BOLD = 'bold',
+  ITALIC = 'italic',
   CODE = 'code',
   INLINE_CODE = 'inlineCode',
 }
