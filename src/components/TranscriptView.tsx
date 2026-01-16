@@ -59,7 +59,7 @@ function renderFormattedText(parts: Array<{ type: string; content: string; color
   for (const part of parts) {
     const content = part.content;
     const isBold = part.type === FormattedTextPartType.BOLD;
-    const color = part.color;
+    const color = part.color ?? 'white';
 
     const logicalLines = splitLines(content);
     for (let i = 0; i < logicalLines.length; i++) {
@@ -76,16 +76,19 @@ function renderFormattedText(parts: Array<{ type: string; content: string; color
         continue;
       }
 
-      const remainingWidth = width - currentLine.length;
-      const wrapped = wrapLine(logicalLine, remainingWidth > 0 ? remainingWidth : width);
+      let remaining = logicalLine;
+      let isFirst = true;
 
-      for (let j = 0; j < wrapped.length; j++) {
-        const segment = wrapped[j];
+      while (remaining.length > 0) {
+        const availableWidth = isFirst ? width - currentLine.length : width;
+        const effectiveWidth = availableWidth > 0 ? availableWidth : width;
+        const segment = remaining.slice(0, effectiveWidth);
+        remaining = remaining.slice(effectiveWidth);
 
-        if (j === 0 && currentLine.length + segment.length <= width) {
+        if (isFirst && currentLine.length + segment.length <= width) {
           currentLine += segment;
-          if (color) currentLineColor = color;
-          if (isBold) currentLineBold = true;
+          currentLineColor = color;
+          currentLineBold = isBold;
         } else {
           if (currentLine) {
             lines.push({ text: currentLine, color: currentLineColor, bold: currentLineBold });
@@ -94,9 +97,10 @@ function renderFormattedText(parts: Array<{ type: string; content: string; color
             currentLineBold = false;
           }
           currentLine = segment;
-          if (color) currentLineColor = color;
-          if (isBold) currentLineBold = true;
+          currentLineColor = color;
+          currentLineBold = isBold;
         }
+        isFirst = false;
       }
     }
   }
