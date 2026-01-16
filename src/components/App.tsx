@@ -9,7 +9,6 @@ import { cwd } from 'node:process';
 import {
   useSessionStore,
   getDefaultStore,
-  persistSession,
   type SessionStore,
 } from '../stores/session';
 
@@ -22,9 +21,9 @@ export function App({ store: injectedStore }: AppProps) {
   const { stdout } = useStdout();
 
   const store = injectedStore ?? getDefaultStore();
-  const messages = useSessionStore((s) => s.messages);
-  const toolCalls = useSessionStore((s) => s.toolCalls);
-  const conversation = useSessionStore((s) => s.conversation);
+  const messages = useSessionStore((s) => s.messages, store);
+  const toolCalls = useSessionStore((s) => s.toolCalls, store);
+  const conversation = useSessionStore((s) => s.conversation, store);
 
   const [agent] = useState(() => {
     const created = new Agent(undefined, {
@@ -94,7 +93,6 @@ export function App({ store: injectedStore }: AppProps) {
         .addMessage({ role: MessageRole.ASSISTANT, content: response.text });
       store.getState().setConversation(agent.getConversation());
       if (response.error) setError(response.error);
-      persistSession();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
@@ -161,12 +159,6 @@ export function App({ store: injectedStore }: AppProps) {
       return;
     }
   });
-
-  useEffect(() => {
-    return () => {
-      persistSession();
-    };
-  }, []);
 
   return (
     <Box flexDirection="column" height={terminalHeight}>

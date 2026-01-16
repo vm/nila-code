@@ -6,6 +6,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  unlinkSync,
   renameSync,
   statSync,
   writeFileSync,
@@ -89,7 +90,6 @@ export function createFileStorage(
       const sessionPath = getSessionFilePath(runId, options?.baseDir);
       try {
         if (existsSync(sessionPath)) {
-          const { unlinkSync } = require('node:fs');
           unlinkSync(sessionPath);
         }
       } catch {}
@@ -112,6 +112,17 @@ export type CreateSessionStoreOptions = {
   storage?: StateStorage;
   enablePersist?: boolean;
 };
+
+type PersistedSessionState = Pick<
+  SessionState,
+  | 'runId'
+  | 'createdAt'
+  | 'workingDir'
+  | 'model'
+  | 'messages'
+  | 'toolCalls'
+  | 'conversation'
+>;
 
 export function createSessionStore(options?: CreateSessionStoreOptions) {
   const { initialState, storage, enablePersist = false } = options ?? {};
@@ -165,16 +176,15 @@ export function createSessionStore(options?: CreateSessionStoreOptions) {
             await storage.removeItem(name);
           },
         },
-        partialize: (state) =>
-          ({
-            runId: state.runId,
-            createdAt: state.createdAt,
-            workingDir: state.workingDir,
-            model: state.model,
-            messages: state.messages,
-            toolCalls: state.toolCalls,
-            conversation: state.conversation,
-          }) as unknown as SessionState,
+        partialize: (state): PersistedSessionState => ({
+          runId: state.runId,
+          createdAt: state.createdAt,
+          workingDir: state.workingDir,
+          model: state.model,
+          messages: state.messages,
+          toolCalls: state.toolCalls,
+          conversation: state.conversation,
+        }),
       })
     );
   }
@@ -269,7 +279,7 @@ export function initializeDefaultStore(options?: {
   });
 
   defaultStore = createSessionStore({
-    initialState: initialData ?? { runId },
+    initialState: initialData ?? { runId, workingDir: baseDir ?? process.cwd() },
     storage,
     enablePersist: true,
   });
@@ -284,34 +294,11 @@ export function getDefaultStore(): SessionStore {
   return defaultStore;
 }
 
-export function useSessionStore<T>(selector: (state: SessionState) => T): T {
-  return useStore(getDefaultStore(), selector);
-}
-
-export function persistSession(): void {
-  const store = getDefaultStore();
-  const state = store.getState();
-  if (!state.runId) return;
-
-  const storage = createFileStorage(() => state.runId);
-  storage.setItem(
-    'session',
-    JSON.stringify(
-      {
-        state: {
-          runId: state.runId,
-          createdAt: state.createdAt,
-          workingDir: state.workingDir,
-          model: state.model,
-          messages: state.messages,
-          toolCalls: state.toolCalls,
-          conversation: state.conversation,
-        },
-      },
-      null,
-      2
-    )
-  );
+export function useSessionStore<T>(
+  selector: (state: SessionState) => T,
+  store?: SessionStore
+): T {
+  return useStore(store ?? getDefaultStore(), selector);
 }
 
 export function resetDefaultStore(): void {

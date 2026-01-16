@@ -11,7 +11,6 @@ import {
   findLatestRunId,
   initializeDefaultStore,
   resetDefaultStore,
-  persistSession,
   type SessionStore,
 } from '../../src/stores/session';
 import { MessageRole, ToolCallStatus } from '../../src/shared/types';
@@ -429,15 +428,11 @@ describe('file storage', () => {
     });
   });
 
-  describe('persistSession', () => {
+  describe('persisted store updates', () => {
     it('saves current state to file', () => {
       const runId = generateRunId();
-      initializeDefaultStore({ runId, baseDir: testDir });
-
       const store = initializeDefaultStore({ runId, baseDir: testDir });
       store.getState().addMessage({ role: MessageRole.USER, content: 'Test persist' });
-
-      persistSession();
 
       const sessionPath = join(testDir, '.nila', 'sessions', runId, 'session.json');
       expect(existsSync(sessionPath)).toBe(true);
