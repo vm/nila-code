@@ -1,5 +1,4 @@
-import { FormattedTextPartType } from '../shared/types';
-import { isValidColor } from './color-mapping';
+import { FormattedTextPart, FormattedTextPartType } from '../shared/types';
 
 export function extractDescription(content: string): string {
   const trimmed = content.trim();
@@ -16,160 +15,194 @@ export function extractDescription(content: string): string {
   return firstLine || '';
 }
 
-export type FormattedTextPart = {
-  type: FormattedTextPartType;
-  content: string;
-  color?: string;
+type ParseState = {
+  pos: number;
+  text: string;
 };
 
-function isEscaped(content: string, index: number): boolean {
-  let backslashes = 0;
-  for (let i = index - 1; i >= 0; i--) {
-    if (content[i] !== '\\') break;
-    backslashes += 1;
+function parseBold(state: ParseState): FormattedTextPart | null {
+  if (state.pos + 1 >= state.text.length || state.text[state.pos] !== '*' || state.text[state.pos + 1] !== '*') {
+    return null;
   }
-  return backslashes % 2 === 1;
-}
 
-function findNextUnescaped(
-  content: string,
-  token: string,
-  startIndex: number
-): number {
-  for (let i = startIndex; i <= content.length - token.length; i++) {
-    if (content.startsWith(token, i) && !isEscaped(content, i)) {
-      return i;
+  const start = state.pos + 2;
+  const savedPos = state.pos;
+  state.pos = start;
+
+  const nestedParts: FormattedTextPart[] = [];
+
+  while (state.pos < state.text.length) {
+    if (state.pos + 1 < state.text.length && state.text[state.pos] === '*' && state.text[state.pos + 1] === '*') {
+      state.pos += 2;
+      const content = nestedParts.map((p) => p.content).join('');
+      return {
+        type: FormattedTextPartType.BOLD,
+        content: content.trim() || content,
+      };
     }
-  }
-  return -1;
-}
 
-function unescapeText(content: string): string {
-  let result = '';
-  for (let i = 0; i < content.length; i++) {
-    const char = content[i];
-    if (char === '\\' && i + 1 < content.length) {
-      result += content[i + 1];
-      i += 1;
+    const italicPart = parseItalic(state);
+    if (italicPart) {
+      nestedParts.push(italicPart);
       continue;
     }
-    result += char;
+
+    const codePart = parseCode(state);
+    if (codePart) {
+      nestedParts.push(codePart);
+      continue;
+    }
+
+    const textPart = parseText(state);
+    if (textPart.content) {
+      nestedParts.push(textPart);
+    } else {
+      break;
+    }
   }
-  return result;
+
+  state.pos = savedPos;
+  return null;
 }
 
-export function parseMarkdown(content: string): FormattedTextPart[] {
-  if (content === '') {
+function parseItalic(state: ParseState): FormattedTextPart | null {
+  if (state.pos >= state.text.length || state.text[state.pos] !== '*') {
+    return null;
+  }
+
+  const next = state.pos + 1 < state.text.length ? state.text[state.pos + 1] : null;
+
+  if (next === '*') {
+    return null;
+  }
+
+  const start = state.pos + 1;
+  let pos = start;
+  let content = '';
+
+  while (pos < state.text.length) {
+    if (state.text[pos] === '*') {
+      const prevChar = pos > 0 ? state.text[pos - 1] : null;
+      const nextChar = pos + 1 < state.text.length ? state.text[pos + 1] : null;
+      if (prevChar !== '*' && nextChar !== '*') {
+        state.pos = pos + 1;
+        return {
+          type: FormattedTextPartType.ITALIC,
+          content: content.trim() || content,
+        };
+      }
+    }
+
+    if (state.text[pos] === '\\' && pos + 1 < state.text.length) {
+      const next = state.text[pos + 1];
+      if (next === '*' || next === '`') {
+        content += next;
+        pos += 2;
+        continue;
+      }
+    }
+
+    content += state.text[pos];
+    pos++;
+  }
+
+  return null;
+}
+
+function parseCode(state: ParseState): FormattedTextPart | null {
+  if (state.pos >= state.text.length || state.text[state.pos] !== '`') {
+    return null;
+  }
+
+  const start = state.pos + 1;
+  let pos = start;
+  let content = '';
+
+  while (pos < state.text.length) {
+    if (state.text[pos] === '`') {
+      state.pos = pos + 1;
+      return {
+        type: FormattedTextPartType.INLINE_CODE,
+        content,
+      };
+    }
+
+    content += state.text[pos];
+    pos++;
+  }
+
+  return null;
+}
+
+function parseText(state: ParseState): FormattedTextPart {
+  let content = '';
+
+  while (state.pos < state.text.length) {
+    const char = state.text[state.pos];
+    const nextChar = state.pos + 1 < state.text.length ? state.text[state.pos + 1] : null;
+
+    if (char === '\\' && nextChar && (nextChar === '*' || nextChar === '`')) {
+      content += nextChar;
+      state.pos += 2;
+      continue;
+    }
+
+    if (char === '`') {
+      break;
+    }
+
+    if (char === '*' && nextChar === '*') {
+      break;
+    }
+
+    if (char === '*' && nextChar !== '*') {
+      break;
+    }
+
+    content += char;
+    state.pos++;
+  }
+
+  return {
+    type: FormattedTextPartType.TEXT,
+    content,
+  };
+}
+
+export function parseMarkdown(text: string): FormattedTextPart[] {
+  if (!text) {
     return [{ type: FormattedTextPartType.TEXT, content: '' }];
   }
 
   const parts: FormattedTextPart[] = [];
-  let buffer = '';
-  let i = 0;
+  const state: ParseState = { pos: 0, text };
 
-  const flushBuffer = () => {
-    if (!buffer) return;
-    parts.push({ type: FormattedTextPartType.TEXT, content: buffer });
-    buffer = '';
-  };
-
-  while (i < content.length) {
-    const current = content[i];
-
-    if (current === '\\') {
-      if (i + 1 < content.length) {
-        buffer += content[i + 1];
-        i += 2;
-        continue;
-      }
-      buffer += '\\';
-      i += 1;
+  while (state.pos < state.text.length) {
+    const codePart = parseCode(state);
+    if (codePart) {
+      parts.push(codePart);
       continue;
     }
 
-    if (
-      content.startsWith('{color:', i) &&
-      !isEscaped(content, i)
-    ) {
-      const startTagEnd = findNextUnescaped(content, '}', i + 7);
-      if (startTagEnd !== -1) {
-        const colorName = content.slice(i + 7, startTagEnd).trim();
-        const endTagStart = findNextUnescaped(
-          content,
-          '{/color}',
-          startTagEnd + 1
-        );
-        if (endTagStart !== -1) {
-          const rawInner = content.slice(startTagEnd + 1, endTagStart);
-          const inner = unescapeText(rawInner);
-          const color = isValidColor(colorName) ? colorName : undefined;
-          flushBuffer();
-          parts.push({
-            type: FormattedTextPartType.TEXT,
-            content: inner,
-            color,
-          });
-          i = endTagStart + '{/color}'.length;
-          continue;
-        }
-      }
+    const boldPart = parseBold(state);
+    if (boldPart) {
+      parts.push(boldPart);
+      continue;
     }
 
-    if (current === '`' && !isEscaped(content, i)) {
-      const end = findNextUnescaped(content, '`', i + 1);
-      if (end !== -1) {
-        const rawInner = content.slice(i + 1, end);
-        const inner = unescapeText(rawInner);
-        flushBuffer();
-        parts.push({
-          type: FormattedTextPartType.INLINE_CODE,
-          content: inner,
-        });
-        i = end + 1;
-        continue;
-      }
+    const italicPart = parseItalic(state);
+    if (italicPart) {
+      parts.push(italicPart);
+      continue;
     }
 
-    if (content.startsWith('**', i) && !isEscaped(content, i)) {
-      const end = findNextUnescaped(content, '**', i + 2);
-      if (end !== -1 && end > i + 2) {
-        const rawInner = content.slice(i + 2, end);
-        const inner = unescapeText(rawInner);
-        flushBuffer();
-        parts.push({
-          type: FormattedTextPartType.BOLD,
-          content: inner,
-        });
-        i = end + 2;
-        continue;
-      }
+    const textPart = parseText(state);
+    if (textPart.content) {
+      parts.push(textPart);
+    } else {
+      state.pos++;
     }
-
-    if (current === '*' && !isEscaped(content, i)) {
-      const end = findNextUnescaped(content, '*', i + 1);
-      if (end !== -1 && end > i + 1) {
-        const rawInner = content.slice(i + 1, end);
-        const inner = unescapeText(rawInner);
-        flushBuffer();
-        parts.push({
-          type: FormattedTextPartType.ITALIC,
-          content: inner,
-        });
-        i = end + 1;
-        continue;
-      }
-    }
-
-    buffer += current;
-    i += 1;
   }
 
-  flushBuffer();
-
-  if (parts.length === 0) {
-    return [{ type: FormattedTextPartType.TEXT, content }];
-  }
-
-  return parts;
+  return parts.length > 0 ? parts : [{ type: FormattedTextPartType.TEXT, content: text }];
 }
-
