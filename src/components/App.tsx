@@ -1,55 +1,56 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import { Agent } from '../agent/agent';
 import { Input } from './Input';
-import { MessageRole, ToolCallStatus } from '../shared/types';
-import { splitForToolCalls } from '../shared/transcript';
+import { splitForToolCalls, deriveTranscript } from '../shared/transcript';
 import { TranscriptView } from './TranscriptView';
 import { cwd } from 'node:process';
+import {
+  useSessionStore,
+  getDefaultStore,
+  type SessionStore,
+} from '../stores/session';
+import type { AgentOptions, AgentResponse, Message } from '../agent/types';
 
-type MessageItem = {
-  role: MessageRole;
-  content: string;
+export type AppAgent = {
+  getModel: () => string;
+  getConversation: () => Message[];
+  restoreConversation: (messages: Message[]) => void;
+  chat: (userMessage: string) => Promise<AgentResponse>;
 };
 
-type ToolCallItem = {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-  status: ToolCallStatus;
-  result?: string;
-  error?: boolean;
+export type AppAgentFactory = (options: AgentOptions) => AppAgent;
+
+type AppProps = {
+  store?: SessionStore;
+  agentFactory?: AppAgentFactory;
 };
 
-export function App() {
+export function App({ store: injectedStore, agentFactory }: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
-  const [messages, setMessages] = useState<MessageItem[]>([]);
-  const [toolCalls, setToolCalls] = useState<ToolCallItem[]>([]);
+
+  const store = injectedStore ?? getDefaultStore();
+  const conversation = useSessionStore((s) => s.conversation, store);
+  const { messages, toolCalls } = useMemo(
+    () => deriveTranscript(conversation),
+    [conversation]
+  );
 
   const [agent] = useState(() => {
-    return new Agent(undefined, {
-      onToolStart: (id, name, input) => {
-        setToolCalls((prev) => [
-          ...prev,
-          { id, name, input, status: ToolCallStatus.RUNNING },
-        ]);
+    const factory = agentFactory ?? ((options: AgentOptions) => new Agent(undefined, options));
+    const created = factory({
+      onToolStart: () => {
+        store.getState().setConversation(created.getConversation());
       },
-      onToolComplete: (id, _name, _input, result, error) => {
-        setToolCalls((prev) =>
-          prev.map((tc) =>
-            tc.id === id
-              ? {
-                  ...tc,
-                  status: error ? ToolCallStatus.ERROR : ToolCallStatus.DONE,
-                  result,
-                  error,
-                }
-              : tc
-          )
-        );
+      onToolComplete: () => {
+        store.getState().setConversation(created.getConversation());
       },
     });
+    if (conversation.length > 0) {
+      created.restoreConversation(conversation);
+    }
+    return created;
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -82,20 +83,22 @@ export function App() {
     };
   }, [stdout]);
 
+  useEffect(() => {
+    store.getState().setModel(agent.getModel());
+  }, [agent, store]);
+
   const handleSubmit = async (text: string) => {
-    setMessages((prev) => [...prev, { role: MessageRole.USER, content: text }]);
+    store.getState().addConversationMessage({ role: 'user', content: text });
     setScrollOffset(0);
     setIsLoading(true);
     setThinkingStartTime(Date.now());
     setError(null);
-    setToolCalls([]);
 
     try {
-      const response = await agent.chat(text);
-      setMessages((prev) => [
-        ...prev,
-        { role: MessageRole.ASSISTANT, content: response.text },
-      ]);
+      const responsePromise = agent.chat(text);
+      store.getState().setConversation(agent.getConversation());
+      const response = await responsePromise;
+      store.getState().setConversation(agent.getConversation());
       if (response.error) setError(response.error);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';

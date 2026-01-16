@@ -28,6 +28,19 @@ Always prefer editing existing files over creating new ones when appropriate. Be
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const parseToolInput = (raw: string | undefined): Record<string, unknown> => {
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+    return {};
+  } catch {
+    return {};
+  }
+};
+
 function createOpenAIClient(): { client: OpenAI; model: string } {
   const openaiApiKey = process.env.OPENAI_API_KEY;
   const openrouterApiKey = process.env.OPENROUTER_API_KEY;
@@ -114,14 +127,23 @@ export class Agent {
     return this.conversation.length;
   }
 
+  getConversation(): Message[] {
+    return [...this.conversation];
+  }
+
+  restoreConversation(messages: Message[]): void {
+    this.conversation = [...messages];
+  }
+
+  getModel(): string {
+    return this.model;
+  }
+
   private async executeToolWithErrorHandling(
     toolCall: ToolCallMessage
   ): Promise<{ result: string; error: boolean }> {
     try {
-      const toolInput = JSON.parse(toolCall.function.arguments) as Record<
-        string,
-        unknown
-      >;
+      const toolInput = parseToolInput(toolCall.function.arguments);
       this.options.onToolStart(toolCall.id, toolCall.function.name, toolInput);
       const result = executeTool(toolCall.function.name, toolInput);
       const isError = result.startsWith('Error:');
@@ -137,9 +159,7 @@ export class Agent {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       const result = `Error: Tool execution failed: ${errorMessage}`;
-      const toolInput = JSON.parse(
-        toolCall.function.arguments || '{}'
-      ) as Record<string, unknown>;
+      const toolInput = parseToolInput(toolCall.function.arguments);
       this.options.onToolComplete(
         toolCall.id,
         toolCall.function.name,
@@ -164,10 +184,7 @@ export class Agent {
       for (let i = 0; i < toolCalls.length; i++) {
         const toolCall = toolCalls[i];
         const { result, error } = results[i];
-        const toolInput = JSON.parse(toolCall.function.arguments) as Record<
-          string,
-          unknown
-        >;
+        const toolInput = parseToolInput(toolCall.function.arguments);
         executedToolCalls.push({
           name: toolCall.function.name,
           input: toolInput,
@@ -179,10 +196,7 @@ export class Agent {
       for (const toolCall of toolCalls) {
         const { result, error } =
           await this.executeToolWithErrorHandling(toolCall);
-        const toolInput = JSON.parse(toolCall.function.arguments) as Record<
-          string,
-          unknown
-        >;
+        const toolInput = parseToolInput(toolCall.function.arguments);
         executedToolCalls.push({
           name: toolCall.function.name,
           input: toolInput,
@@ -336,14 +350,14 @@ export class Agent {
             }
           );
 
-          const executedToolCalls =
-            await this.executeToolsParallel(toolCallMessages);
-          toolCalls.push(...executedToolCalls);
-
           this.conversation.push({
             role: 'assistant',
             content: toolCallMessages,
           });
+
+          const executedToolCalls =
+            await this.executeToolsParallel(toolCallMessages);
+          toolCalls.push(...executedToolCalls);
 
           for (let i = 0; i < toolCallMessages.length; i++) {
             this.conversation.push({
