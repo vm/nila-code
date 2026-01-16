@@ -50,16 +50,55 @@ function wrapText(text: string, width: number): string[] {
   return out;
 }
 
-function renderFormattedText(parts: Array<{ type: string; content: string; color?: string }>, width: number): TranscriptLine[] {
+type LineStyle = {
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  strikethrough: boolean;
+  inverse: boolean;
+};
+
+function getStyleForPart(part: { type: string }): LineStyle {
+  return {
+    color: 'white',
+    bold: part.type === FormattedTextPartType.BOLD,
+    italic: part.type === FormattedTextPartType.ITALIC,
+    strikethrough: part.type === FormattedTextPartType.STRIKETHROUGH,
+    inverse: part.type === FormattedTextPartType.INLINE_CODE || part.type === FormattedTextPartType.CODE,
+  };
+}
+
+function stylesEqual(a: LineStyle, b: LineStyle): boolean {
+  return a.color === b.color && a.bold === b.bold && a.italic === b.italic && 
+         a.strikethrough === b.strikethrough && a.inverse === b.inverse;
+}
+
+function pushLine(lines: TranscriptLine[], text: string, style: LineStyle): void {
+  lines.push({
+    text,
+    color: style.color,
+    bold: style.bold,
+    italic: style.italic,
+    strikethrough: style.strikethrough,
+    inverse: style.inverse,
+  });
+}
+
+function renderFormattedText(parts: Array<{ type: string; content: string }>, width: number): TranscriptLine[] {
   const lines: TranscriptLine[] = [];
   let currentLine = '';
-  let currentLineColor: string | undefined = 'white';
-  let currentLineBold = false;
+  let currentStyle: LineStyle = { color: 'white', bold: false, italic: false, strikethrough: false, inverse: false };
+  const defaultStyle: LineStyle = { color: 'white', bold: false, italic: false, strikethrough: false, inverse: false };
 
   for (const part of parts) {
     const content = part.content;
-    const isBold = part.type === FormattedTextPartType.BOLD;
-    const color = part.color;
+    const style = getStyleForPart(part);
+
+    if (currentLine && !stylesEqual(currentStyle, style)) {
+      pushLine(lines, currentLine, currentStyle);
+      currentLine = '';
+      currentStyle = defaultStyle;
+    }
 
     const logicalLines = splitLines(content);
     for (let i = 0; i < logicalLines.length; i++) {
@@ -67,42 +106,40 @@ function renderFormattedText(parts: Array<{ type: string; content: string; color
 
       if (logicalLine.length === 0 && i < logicalLines.length - 1) {
         if (currentLine) {
-          lines.push({ text: currentLine, color: currentLineColor, bold: currentLineBold });
+          pushLine(lines, currentLine, currentStyle);
           currentLine = '';
-          currentLineColor = 'white';
-          currentLineBold = false;
+          currentStyle = defaultStyle;
         }
         lines.push({ text: '' });
         continue;
       }
 
-      const remainingWidth = width - currentLine.length;
-      const wrapped = wrapLine(logicalLine, remainingWidth > 0 ? remainingWidth : width);
+      let remaining = logicalLine;
 
-      for (let j = 0; j < wrapped.length; j++) {
-        const segment = wrapped[j];
+      while (remaining.length > 0) {
+        const availableWidth = width - currentLine.length;
+        const effectiveWidth = availableWidth > 0 ? availableWidth : width;
+        const segment = remaining.slice(0, effectiveWidth);
+        remaining = remaining.slice(effectiveWidth);
 
-        if (j === 0 && currentLine.length + segment.length <= width) {
+        if (currentLine.length + segment.length <= width) {
           currentLine += segment;
-          if (color) currentLineColor = color;
-          if (isBold) currentLineBold = true;
+          currentStyle = style;
         } else {
           if (currentLine) {
-            lines.push({ text: currentLine, color: currentLineColor, bold: currentLineBold });
+            pushLine(lines, currentLine, currentStyle);
             currentLine = '';
-            currentLineColor = 'white';
-            currentLineBold = false;
+            currentStyle = defaultStyle;
           }
           currentLine = segment;
-          if (color) currentLineColor = color;
-          if (isBold) currentLineBold = true;
+          currentStyle = style;
         }
       }
     }
   }
 
   if (currentLine) {
-    lines.push({ text: currentLine, color: currentLineColor, bold: currentLineBold });
+    pushLine(lines, currentLine, currentStyle);
   }
 
   return lines.length > 0 ? lines : [{ text: '' }];

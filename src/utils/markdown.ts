@@ -1,5 +1,5 @@
+import { Lexer, Token, Tokens } from 'marked';
 import { FormattedTextPart, FormattedTextPartType } from '../shared/types';
-import { resolveColor } from './color-mapping';
 
 export function extractDescription(content: string): string {
   const trimmed = content.trim();
@@ -16,212 +16,209 @@ export function extractDescription(content: string): string {
   return firstLine || '';
 }
 
-type ParseState = {
-  pos: number;
-  text: string;
-};
-
-function parseBold(state: ParseState): FormattedTextPart | null {
-  if (state.pos + 1 >= state.text.length || state.text[state.pos] !== '*' || state.text[state.pos + 1] !== '*') {
-    return null;
-  }
-
-  const start = state.pos + 2;
-  const savedPos = state.pos;
-  state.pos = start;
-
-  const nestedParts: FormattedTextPart[] = [];
-
-  while (state.pos < state.text.length) {
-    if (state.pos + 1 < state.text.length && state.text[state.pos] === '*' && state.text[state.pos + 1] === '*') {
-      state.pos += 2;
-      const content = nestedParts.map((p) => p.content).join('');
-      return {
-        type: FormattedTextPartType.BOLD,
-        content: content.trim() || content,
-      };
-    }
-
-    const colorPart = parseColor(state);
-    if (colorPart) {
-      nestedParts.push(colorPart);
-      continue;
-    }
-
-    const italicPart = parseItalic(state);
-    if (italicPart) {
-      nestedParts.push(italicPart);
-      continue;
-    }
-
-    const codePart = parseCode(state);
-    if (codePart) {
-      nestedParts.push(codePart);
-      continue;
-    }
-
-    const textPart = parseText(state);
-    if (textPart.content) {
-      nestedParts.push(textPart);
-    } else {
-      break;
+function getTextContent(tokens: Token[]): string {
+  let result = '';
+  for (const token of tokens) {
+    if (token.type === 'text' || token.type === 'codespan') {
+      result += 'text' in token ? token.text : '';
+    } else if ('tokens' in token && Array.isArray(token.tokens)) {
+      result += getTextContent(token.tokens);
+    } else if ('raw' in token) {
+      result += token.raw;
     }
   }
-
-  state.pos = savedPos;
-  return null;
+  return result;
 }
 
-function parseItalic(state: ParseState): FormattedTextPart | null {
-  if (state.pos >= state.text.length || state.text[state.pos] !== '*') {
-    return null;
-  }
+function processInlineTokens(tokens: Token[]): FormattedTextPart[] {
+  const parts: FormattedTextPart[] = [];
 
-  const next = state.pos + 1 < state.text.length ? state.text[state.pos + 1] : null;
-
-  if (next === '*') {
-    return null;
-  }
-
-  const start = state.pos + 1;
-  let pos = start;
-  let content = '';
-
-  while (pos < state.text.length) {
-    if (state.text[pos] === '*') {
-      const prevChar = pos > 0 ? state.text[pos - 1] : null;
-      const nextChar = pos + 1 < state.text.length ? state.text[pos + 1] : null;
-      if (prevChar !== '*' && nextChar !== '*') {
-        state.pos = pos + 1;
-        return {
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'strong': {
+        const strongToken = token as Tokens.Strong;
+        const content = getTextContent(strongToken.tokens ?? []);
+        parts.push({
+          type: FormattedTextPartType.BOLD,
+          content,
+        });
+        break;
+      }
+      case 'em': {
+        const emToken = token as Tokens.Em;
+        const content = getTextContent(emToken.tokens ?? []);
+        parts.push({
           type: FormattedTextPartType.ITALIC,
-          content: content.trim() || content,
-        };
+          content,
+        });
+        break;
+      }
+      case 'codespan': {
+        const codeToken = token as Tokens.Codespan;
+        parts.push({
+          type: FormattedTextPartType.INLINE_CODE,
+          content: codeToken.text,
+        });
+        break;
+      }
+      case 'del': {
+        const delToken = token as Tokens.Del;
+        const content = getTextContent(delToken.tokens ?? []);
+        parts.push({
+          type: FormattedTextPartType.STRIKETHROUGH,
+          content,
+        });
+        break;
+      }
+      case 'text': {
+        const textToken = token as Tokens.Text;
+        if ('tokens' in textToken && Array.isArray(textToken.tokens)) {
+          parts.push(...processInlineTokens(textToken.tokens));
+        } else {
+          parts.push({
+            type: FormattedTextPartType.TEXT,
+            content: textToken.text,
+          });
+        }
+        break;
+      }
+      case 'escape': {
+        const escapeToken = token as Tokens.Escape;
+        parts.push({
+          type: FormattedTextPartType.TEXT,
+          content: escapeToken.text,
+        });
+        break;
+      }
+      case 'link': {
+        const linkToken = token as Tokens.Link;
+        const content = getTextContent(linkToken.tokens ?? []);
+        parts.push({
+          type: FormattedTextPartType.TEXT,
+          content,
+        });
+        break;
+      }
+      case 'image': {
+        const imageToken = token as Tokens.Image;
+        parts.push({
+          type: FormattedTextPartType.TEXT,
+          content: imageToken.text || imageToken.title || '[image]',
+        });
+        break;
+      }
+      case 'br': {
+        parts.push({
+          type: FormattedTextPartType.TEXT,
+          content: '\n',
+        });
+        break;
+      }
+      default: {
+        if ('text' in token && typeof token.text === 'string') {
+          parts.push({
+            type: FormattedTextPartType.TEXT,
+            content: token.text,
+          });
+        } else if ('raw' in token && typeof token.raw === 'string') {
+          parts.push({
+            type: FormattedTextPartType.TEXT,
+            content: token.raw,
+          });
+        }
       }
     }
+  }
 
-    if (state.text[pos] === '\\' && pos + 1 < state.text.length) {
-      const next = state.text[pos + 1];
-      if (next === '*' || next === '`') {
-        content += next;
-        pos += 2;
-        continue;
+  return parts;
+}
+
+function processTokens(tokens: Token[]): FormattedTextPart[] {
+  const parts: FormattedTextPart[] = [];
+
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'paragraph': {
+        const paragraphToken = token as Tokens.Paragraph;
+        parts.push(...processInlineTokens(paragraphToken.tokens ?? []));
+        break;
+      }
+      case 'text': {
+        const textToken = token as Tokens.Text;
+        if ('tokens' in textToken && Array.isArray(textToken.tokens)) {
+          parts.push(...processInlineTokens(textToken.tokens));
+        } else {
+          parts.push({
+            type: FormattedTextPartType.TEXT,
+            content: textToken.text,
+          });
+        }
+        break;
+      }
+      case 'space': {
+        parts.push({
+          type: FormattedTextPartType.TEXT,
+          content: '\n',
+        });
+        break;
+      }
+      case 'code': {
+        const codeToken = token as Tokens.Code;
+        parts.push({
+          type: FormattedTextPartType.CODE,
+          content: codeToken.text,
+        });
+        break;
+      }
+      case 'heading': {
+        const headingToken = token as Tokens.Heading;
+        parts.push(...processInlineTokens(headingToken.tokens ?? []));
+        parts.push({ type: FormattedTextPartType.TEXT, content: '\n' });
+        break;
+      }
+      case 'list': {
+        const listToken = token as Tokens.List;
+        const startNum = typeof listToken.start === 'number' ? listToken.start : 1;
+        for (let idx = 0; idx < listToken.items.length; idx++) {
+          const item = listToken.items[idx];
+          let bullet: string;
+          if (listToken.ordered) {
+            const num = startNum + idx;
+            bullet = item.task ? `${num}. ☐ ` : `${num}. `;
+          } else {
+            bullet = item.task ? '☐ ' : '• ';
+          }
+          parts.push({ type: FormattedTextPartType.TEXT, content: bullet });
+          parts.push(...processInlineTokens(item.tokens ?? []));
+          parts.push({ type: FormattedTextPartType.TEXT, content: '\n' });
+        }
+        break;
+      }
+      case 'blockquote': {
+        const blockquoteToken = token as Tokens.Blockquote;
+        parts.push({ type: FormattedTextPartType.TEXT, content: '> ' });
+        parts.push(...processTokens(blockquoteToken.tokens ?? []));
+        break;
+      }
+      default: {
+        if ('tokens' in token && Array.isArray(token.tokens)) {
+          parts.push(...processInlineTokens(token.tokens));
+        } else if ('text' in token && typeof token.text === 'string') {
+          parts.push({
+            type: FormattedTextPartType.TEXT,
+            content: token.text,
+          });
+        } else if ('raw' in token && typeof token.raw === 'string') {
+          parts.push({
+            type: FormattedTextPartType.TEXT,
+            content: token.raw,
+          });
+        }
       }
     }
-
-    content += state.text[pos];
-    pos++;
   }
 
-  return null;
-}
-
-function parseCode(state: ParseState): FormattedTextPart | null {
-  if (state.pos >= state.text.length || state.text[state.pos] !== '`') {
-    return null;
-  }
-
-  const start = state.pos + 1;
-  let pos = start;
-  let content = '';
-
-  while (pos < state.text.length) {
-    if (state.text[pos] === '`') {
-      state.pos = pos + 1;
-      return {
-        type: FormattedTextPartType.INLINE_CODE,
-        content,
-      };
-    }
-
-    content += state.text[pos];
-    pos++;
-  }
-
-  return null;
-}
-
-function parseColor(state: ParseState): FormattedTextPart | null {
-  if (state.pos >= state.text.length || state.text[state.pos] !== '{') {
-    return null;
-  }
-
-  const colorMatch = state.text.slice(state.pos).match(/^\{color:([^}]+)\}/);
-  if (!colorMatch) {
-    return null;
-  }
-
-  const colorName = colorMatch[1].trim();
-  const openTagLength = colorMatch[0].length;
-  const contentStart = state.pos + openTagLength;
-  let pos = contentStart;
-  let content = '';
-
-  while (pos < state.text.length) {
-    const closeMatch = state.text.slice(pos).match(/^\{(\/color)\}/);
-    if (closeMatch) {
-      state.pos = pos + closeMatch[0].length;
-      const resolvedColor = resolveColor(colorName);
-      return {
-        type: FormattedTextPartType.TEXT,
-        content,
-        color: resolvedColor,
-      };
-    }
-
-    if (state.text[pos] === '\\' && pos + 1 < state.text.length) {
-      const next = state.text[pos + 1];
-      if (next === '{' || next === '}') {
-        content += next;
-        pos += 2;
-        continue;
-      }
-    }
-
-    content += state.text[pos];
-    pos++;
-  }
-
-  return null;
-}
-
-function parseText(state: ParseState): FormattedTextPart {
-  let content = '';
-
-  while (state.pos < state.text.length) {
-    const char = state.text[state.pos];
-    const nextChar = state.pos + 1 < state.text.length ? state.text[state.pos + 1] : null;
-
-    if (char === '\\' && nextChar && (nextChar === '*' || nextChar === '`' || nextChar === '{' || nextChar === '}')) {
-      content += nextChar;
-      state.pos += 2;
-      continue;
-    }
-
-    if (char === '{') {
-      break;
-    }
-
-    if (char === '`') {
-      break;
-    }
-
-    if (char === '*' && nextChar === '*') {
-      break;
-    }
-
-    if (char === '*' && nextChar !== '*') {
-      break;
-    }
-
-    content += char;
-    state.pos++;
-  }
-
-  return {
-    type: FormattedTextPartType.TEXT,
-    content,
-  };
+  return parts;
 }
 
 export function parseMarkdown(text: string): FormattedTextPart[] {
@@ -229,41 +226,9 @@ export function parseMarkdown(text: string): FormattedTextPart[] {
     return [{ type: FormattedTextPartType.TEXT, content: '' }];
   }
 
-  const parts: FormattedTextPart[] = [];
-  const state: ParseState = { pos: 0, text };
-
-  while (state.pos < state.text.length) {
-    const codePart = parseCode(state);
-    if (codePart) {
-      parts.push(codePart);
-      continue;
-    }
-
-    const colorPart = parseColor(state);
-    if (colorPart) {
-      parts.push(colorPart);
-      continue;
-    }
-
-    const boldPart = parseBold(state);
-    if (boldPart) {
-      parts.push(boldPart);
-      continue;
-    }
-
-    const italicPart = parseItalic(state);
-    if (italicPart) {
-      parts.push(italicPart);
-      continue;
-    }
-
-    const textPart = parseText(state);
-    if (textPart.content) {
-      parts.push(textPart);
-    } else {
-      state.pos++;
-    }
-  }
+  const lexer = new Lexer({ gfm: true, breaks: true });
+  const tokens = lexer.lex(text);
+  const parts = processTokens(tokens);
 
   return parts.length > 0 ? parts : [{ type: FormattedTextPartType.TEXT, content: text }];
 }

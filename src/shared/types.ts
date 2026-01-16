@@ -29,7 +29,6 @@ export enum FormattedTextPartType {
 export type FormattedTextPart = {
   type: FormattedTextPartType;
   content: string;
-  color?: string;
 };
 
 export type TranscriptLine = {
@@ -37,6 +36,9 @@ export type TranscriptLine = {
   color?: string;
   dimColor?: boolean;
   bold?: boolean;
+  italic?: boolean;
+  strikethrough?: boolean;
+  inverse?: boolean;
 };
 
 export type MessageItem = {
